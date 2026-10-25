@@ -1,0 +1,172 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono',
+    monospace;
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Visible focus for keyboard users (AC-12). */
+:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Prose styling for article bodies — plain, dependency-free. */
+.prose-wideangle {
+  font-size: 1.0625rem;
+  line-height: 1.75;
+}
+
+.prose-wideangle > * + * {
+  margin-top: 1.25em;
+}
+
+.prose-wideangle h2 {
+  font-size: 1.5rem;
+  line-height: 1.3;
+  font-weight: 700;
+  margin-top: 2em;
+  margin-bottom: 0.6em;
+  scroll-margin-top: 5rem;
+}
+
+.prose-wideangle h3 {
+  font-size: 1.25rem;
+  line-height: 1.35;
+  font-weight: 650;
+  margin-top: 1.6em;
+  margin-bottom: 0.5em;
+  scroll-margin-top: 5rem;
+}
+
+.prose-wideangle h4 {
+  font-size: 1.0625rem;
+  font-weight: 650;
+  margin-top: 1.4em;
+  margin-bottom: 0.4em;
+}
+
+.prose-wideangle p {
+  margin-top: 1.25em;
+}
+
+.prose-wideangle a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prose-wideangle ul,
+.prose-wideangle ol {
+  padding-left: 1.5rem;
+  margin-top: 1.25em;
+}
+
+.prose-wideangle ul {
+  list-style: disc;
+}
+
+.prose-wideangle ol {
+  list-style: decimal;
+}
+
+.prose-wideangle li + li {
+  margin-top: 0.4em;
+}
+
+.prose-wideangle li > ul,
+.prose-wideangle li > ol {
+  margin-top: 0.4em;
+}
+
+.prose-wideangle blockquote {
+  border-left: 3px solid currentColor;
+  padding-left: 1rem;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.prose-wideangle pre {
+  overflow-x: auto;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.prose-wideangle code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+.prose-wideangle :not(pre) > code {
+  background: rgb(0 0 0 / 0.06);
+  padding: 0.15em 0.35em;
+  border-radius: 0.25rem;
+}
+
+.prose-wideangle table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+  display: block;
+  overflow-x: auto;
+}
+
+.prose-wideangle th,
+.prose-wideangle td {
+  border: 1px solid rgb(0 0 0 / 0.15);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.prose-wideangle th {
+  font-weight: 650;
+  background: rgb(0 0 0 / 0.04);
+}
+
+.prose-wideangle figure {
+  margin: 1.75em 0;
+}
+
+.prose-wideangle img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+}
+
+.prose-wideangle figcaption {
+  font-size: 0.875rem;
+  opacity: 0.75;
+  margin-top: 0.5rem;
+}
+
+.prose-wideangle hr {
+  border: 0;
+  border-top: 1px solid rgb(0 0 0 / 0.15);
+  margin: 2.5em 0;
+}
