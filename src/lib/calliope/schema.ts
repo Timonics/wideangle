@@ -96,12 +96,8 @@ export const upstreamEnvelopeSchema = z.object({
     .catch({ total: 0, page: 1, pageSize: 20 }),
 });
 
-export type UpstreamEnvelope = z.infer<typeof upstreamEnvelopeSchema>;
-
 /** A Calliope error body: `{ code, message }`. */
 export const upstreamErrorSchema = z.object({
   code: z.string().optional(),
   message: z.string().optional(),
 });
-
-export type UpstreamError = z.infer<typeof upstreamErrorSchema>;

@@ -30,23 +30,10 @@ export function absoluteUrl(path: string): string {
   return `${canonicalOrigin}${normalised}`;
 }
 
-/** Build a site-relative URL. */
-export function siteUrl(path: string): string {
-  const normalised = path.startsWith('/') ? path : `/${path}`;
-  return normalised;
-}
-
 export function articlePath(slug: string): string {
   return `/articles/${encodeSegment(slug)}`;
 }
 
 export function categoryPath(slug: string): string {
   return `/categories/${encodeSegment(slug)}`;
-}
-
-export function articlesPath(page?: number): string {
-  if (page === undefined || page <= 1) {
-    return '/articles';
-  }
-  return `/articles?page=${page}`;
 }

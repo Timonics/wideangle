@@ -30,16 +30,3 @@ export function isUpstreamUnavailable(error: unknown): boolean {
     error instanceof UpstreamContractError
   );
 }
-
-/**
- * A short, non-technical message for the reader.
- *
- * It must not leak upstream internals (hostnames, tokens, stack
- * traces) into a public response (AC-10).
- */
-export function publicErrorMessage(error: unknown): string {
-  if (isUpstreamUnavailable(error)) {
-    return 'The content service is temporarily unavailable. Please try again shortly.';
-  }
-  return 'Something went wrong while loading this page.';
-}

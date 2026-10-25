@@ -15,19 +15,6 @@ import { safeUrl } from './render/safe';
 import type { ArticleView } from './types';
 import { absoluteUrl, articlePath } from './urls';
 
-/** A publication-level page description, used for non-article pages. */
-export interface PageMetadata {
-  title: string;
-  description: string;
-  canonicalPath: string;
-  /** Absolute URL of the social card image, when one exists. */
-  socialImageUrl?: string;
-  /** JSON-LD payload for the page. */
-  jsonLd?: Record<string, unknown>;
-  /** True when the page should not be indexed (error pages). */
-  noIndex?: boolean;
-}
-
 /**
  * Build the title for an article.
  *
