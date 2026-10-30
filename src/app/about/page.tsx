@@ -21,7 +21,7 @@ export default async function AboutPage() {
   const author = authors[0];
 
   return (
-    <>
+    <div className="mx-auto max-w-3xl">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -39,7 +39,7 @@ export default async function AboutPage() {
         }}
       />
 
-      <h1 className="text-3xl font-bold tracking-tight">About</h1>
+      <h1 className="font-serif text-4xl font-semibold tracking-tight">About</h1>
 
       <div className="prose-wideangle mt-6">
         <p>
@@ -83,6 +83,6 @@ export default async function AboutPage() {
           article&apos;s original publication date is preserved.
         </p>
       </div>
-    </>
+    </div>
   );
 }

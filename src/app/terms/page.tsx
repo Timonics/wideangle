@@ -16,8 +16,8 @@ export default function TermsPage() {
   const { publication } = getConfig();
 
   return (
-    <>
-      <h1 className="text-3xl font-bold tracking-tight">Terms</h1>
+    <div className="mx-auto max-w-3xl">
+      <h1 className="font-serif text-4xl font-semibold tracking-tight">Terms</h1>
 
       <div className="prose-wideangle mt-6">
         <h2>Use of this site</h2>
@@ -52,6 +52,6 @@ export default function TermsPage() {
           on this page is the current one.
         </p>
       </div>
-    </>
+    </div>
   );
 }

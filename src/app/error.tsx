@@ -17,15 +17,15 @@ export default function RootErrorBoundary({
 }) {
   return (
     <div className="py-12">
-      <h1 className="text-3xl font-bold tracking-tight">
+      <h1 className="font-serif text-4xl font-semibold tracking-tight">
         Temporarily unavailable
       </h1>
-      <p className="mt-3 text-neutral-600 dark:text-neutral-400">
+      <p className="mt-3 text-muted">
         We could not reach the content service. Please try again in a moment.
       </p>
 
       {error.digest !== undefined ? (
-        <p className="mt-2 text-sm text-neutral-500">
+        <p className="mt-2 text-sm text-muted">
           Reference: <code className="font-mono">{error.digest}</code>
         </p>
       ) : null}
@@ -34,13 +34,13 @@ export default function RootErrorBoundary({
         <button
           type="button"
           onClick={reset}
-          className="rounded border border-neutral-900 bg-neutral-900 px-4 py-2 font-medium text-white hover:bg-neutral-700 dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300"
+          className="rounded-lg bg-accent px-4 py-2 font-medium text-paper transition-colors hover:bg-accent-deep"
         >
           Try again
         </button>
         <Link
           href="/"
-          className="rounded border border-neutral-300 px-4 py-2 font-medium hover:border-neutral-500 dark:border-neutral-700"
+          className="rounded-lg border border-line px-4 py-2 font-medium transition-colors hover:border-accent hover:text-accent"
         >
           Home
         </Link>

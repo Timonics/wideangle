@@ -28,19 +28,24 @@ import {
 export function ArticleBody({
   blocks,
   headingIds,
+  skipBlockIndex,
 }: {
   blocks: ContentBlock[];
   headingIds?: Map<number, string>;
+  /** Block index to omit (e.g. an inline image promoted to the hero). */
+  skipBlockIndex?: number;
 }) {
   return (
     <div className="prose-wideangle">
-      {blocks.map((block, index) => (
-        <Block
-          key={`${block.type}-${index}`}
-          block={block}
-          headingId={headingIds?.get(index)}
-        />
-      ))}
+      {blocks.map((block, index) =>
+        index === skipBlockIndex ? null : (
+          <Block
+            key={`${block.type}-${index}`}
+            block={block}
+            headingId={headingIds?.get(index)}
+          />
+        ),
+      )}
     </div>
   );
 }
@@ -179,9 +184,9 @@ function CodeBlock({ block }: { block: ContentBlock }) {
   const language = readPlainText(block.data, 'language');
   return (
     <figure>
-      <pre className="bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100">
+      <pre className="bg-surface text-ink">
         {language !== null ? (
-          <span className="block border-b border-neutral-300 px-4 py-1.5 font-mono text-xs text-neutral-600 dark:border-neutral-700 dark:text-neutral-400">
+          <span className="block border-b border-line px-4 py-1.5 font-mono text-xs text-muted">
             {language}
           </span>
         ) : null}

@@ -175,7 +175,7 @@ export function unknownBlockPlaceholder(
     <div
       key={key}
       data-block-type={type}
-      className="my-6 rounded border border-dashed border-neutral-300 bg-neutral-50 px-4 py-3 text-sm text-neutral-600 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400"
+      className="my-6 rounded border border-dashed border-line bg-surface px-4 py-3 text-sm text-muted"
     >
       <p className="font-medium">Unsupported content block</p>
       <p className="mt-1">

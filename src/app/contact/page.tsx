@@ -16,8 +16,8 @@ export default function ContactPage() {
   const { publication, contactEmail } = getConfig();
 
   return (
-    <>
-      <h1 className="text-3xl font-bold tracking-tight">Contact</h1>
+    <div className="mx-auto max-w-3xl">
+      <h1 className="font-serif text-4xl font-semibold tracking-tight">Contact</h1>
 
       <div className="prose-wideangle mt-6">
         <p>
@@ -34,6 +34,6 @@ export default function ContactPage() {
           topic. Messages are read in the order they arrive.
         </p>
       </div>
-    </>
+    </div>
   );
 }

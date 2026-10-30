@@ -7,6 +7,7 @@ import { isGenuineMissing } from '@/lib/errors';
 import { categoryPath, isSafeSlug } from '@/lib/urls';
 import { pageJsonLd } from '@/lib/seo';
 import { ArticleCard } from '@/components/ArticleCard';
+import { EmptyState } from '@/components/EmptyState';
 
 export const revalidate = 300;
 
@@ -107,16 +108,16 @@ export default async function CategoryPage({
         }}
       />
 
-      <nav aria-label="Breadcrumb" className="mb-6 text-sm text-neutral-500">
+      <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted">
         <ol className="flex flex-wrap items-center gap-1">
           <li>
-            <Link href="/" className="hover:underline">
+            <Link href="/" className="hover:text-accent">
               {config.publication.name}
             </Link>
           </li>
           <li className="flex items-center gap-1">
             <span aria-hidden="true">/</span>
-            <Link href="/articles" className="hover:underline">
+            <Link href="/articles" className="hover:text-accent">
               Articles
             </Link>
           </li>
@@ -127,31 +128,60 @@ export default async function CategoryPage({
         </ol>
       </nav>
 
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">{category.name}</h1>
-        {category.description !== undefined ? (
-          <p className="mt-2 text-lg text-neutral-600 dark:text-neutral-400">
-            {category.description}
-          </p>
-        ) : null}
-        <p className="mt-1 text-sm text-neutral-500">
-          {articles.total === 0
-            ? 'No articles in this category yet.'
-            : `${articles.total} ${articles.total === 1 ? 'article' : 'articles'}.`}
-        </p>
+      <header className="relative mb-10 overflow-hidden rounded-3xl bg-[#181626] p-8 dark:bg-[#1e1c33] sm:p-12">
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-4 -top-10 select-none font-serif text-[10rem] font-bold leading-none text-accent/10"
+        >
+          {category.name.charAt(0).toUpperCase()}
+        </span>
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-accent via-accent/40 to-transparent"
+        />
+        <div className="relative">
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-accent">
+              Category
+            </p>
+            <p className="rounded-full bg-accent/15 px-3 py-0.5 text-xs font-bold text-accent">
+              {articles.total === 0
+                ? 'No articles yet'
+                : `${articles.total} ${articles.total === 1 ? 'article' : 'articles'}`}
+            </p>
+          </div>
+          <h1 className="mt-3 font-serif text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+            {category.name}
+          </h1>
+          {category.description !== undefined ? (
+            <p className="mt-3 max-w-2xl text-lg leading-relaxed text-white/60">
+              {category.description}
+            </p>
+          ) : null}
+        </div>
       </header>
 
       {articles.items.length === 0 ? (
-        <p className="text-neutral-600 dark:text-neutral-400">
-          {articles.total === 0
-            ? 'Nothing has been filed here yet.'
-            : 'This page is past the end of the category.'}
-        </p>
+        articles.total === 0 ? (
+          <EmptyState
+            title="Nothing filed here yet"
+            action={{ href: '/articles', label: 'Browse the archive' }}
+          >
+            {`Stories filed under ${category.name} will appear here once published.`}
+          </EmptyState>
+        ) : (
+          <EmptyState title="End of the category">
+            This page is past the end of the archive for this category.
+          </EmptyState>
+        )
       ) : (
-        <ul className="space-y-8">
+        <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {articles.items.map((article) => (
-            <li key={article.id}>
-              <ArticleCard article={article} />
+            <li
+              key={article.id}
+              className="rounded-2xl border border-line bg-card p-4 transition-all duration-300 hover:-translate-y-1 hover:border-accent hover:shadow-xl hover:shadow-accent/10"
+            >
+              <ArticleCard article={article} headingLevel={3} image />
             </li>
           ))}
         </ul>
@@ -160,7 +190,7 @@ export default async function CategoryPage({
       {articles.totalPages > 1 ? (
         <nav
           aria-label="Pagination"
-          className="mt-12 flex items-center justify-between border-t border-neutral-200 pt-6 dark:border-neutral-800"
+          className="mt-12 flex items-center justify-between border-t border-line pt-6"
         >
           {articles.hasPrevious ? (
             <Link
@@ -169,7 +199,7 @@ export default async function CategoryPage({
                   ? categoryPath(category.slug)
                   : `${categoryPath(category.slug)}?page=${articles.page - 1}`
               }
-              className="rounded border border-neutral-300 px-4 py-2 text-sm font-medium hover:border-neutral-500 dark:border-neutral-700"
+              className="rounded-lg border border-line px-4 py-2 text-sm font-medium transition-colors hover:border-accent hover:text-accent"
               rel="prev"
             >
               ← Newer
@@ -178,14 +208,14 @@ export default async function CategoryPage({
             <span />
           )}
 
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-muted">
             Page {articles.page} of {articles.totalPages}
           </p>
 
           {articles.hasNext ? (
             <Link
               href={`${categoryPath(category.slug)}?page=${articles.page + 1}`}
-              className="rounded border border-neutral-300 px-4 py-2 text-sm font-medium hover:border-neutral-500 dark:border-neutral-700"
+              className="rounded-lg border border-line px-4 py-2 text-sm font-medium transition-colors hover:border-accent hover:text-accent"
               rel="next"
             >
               Older →

@@ -16,8 +16,10 @@ export default function PrivacyPage() {
   const { publication } = getConfig();
 
   return (
-    <>
-      <h1 className="text-3xl font-bold tracking-tight">Privacy</h1>
+    <div className="mx-auto max-w-3xl">
+      <h1 className="font-serif text-4xl font-semibold tracking-tight">
+        Privacy
+      </h1>
 
       <div className="prose-wideangle mt-6">
         <p>
@@ -67,6 +69,6 @@ export default function PrivacyPage() {
           site.
         </p>
       </div>
-    </>
+    </div>
   );
 }
