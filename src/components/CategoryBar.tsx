@@ -29,13 +29,13 @@ export async function CategoryBar() {
   return (
     <div className="border-b border-line bg-card">
       <div className="mx-auto flex w-full max-w-6xl items-center gap-4 px-5 py-2">
-        <p className="hidden shrink-0 text-xs font-semibold uppercase tracking-wide text-muted lg:block">
+        <p className="hidden shrink-0 text-[11px] font-bold uppercase tracking-[0.18em] text-gold lg:block">
           {date}
         </p>
 
         {categories.length > 0 ? (
           <nav aria-label="Categories" className="min-w-0 flex-1 overflow-x-auto">
-            <ul className="flex items-center gap-1 text-sm font-medium">
+            <ul className="flex items-center gap-1 text-xs font-bold uppercase tracking-[0.14em]">
               {categories.map((category) => (
                 <li key={category.id} className="shrink-0">
                   <Link
@@ -44,7 +44,7 @@ export async function CategoryBar() {
                   >
                     <span
                       aria-hidden="true"
-                      className="inline-block h-1 w-1 rounded-full bg-accent"
+                      className="inline-block h-1 w-1 rounded-full bg-gold"
                     />
                     {category.name}
                   </Link>

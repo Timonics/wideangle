@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ViewfinderMark } from '@/components/Logo';
+import { BrandMark } from '@/components/Logo';
 
 /**
  * Shared empty state: an accent icon medallion, a serif title, a muted
@@ -18,7 +18,7 @@ export function EmptyState({
   return (
     <div className="flex flex-col items-center rounded-3xl border border-dashed border-line bg-surface/50 px-6 py-14 text-center sm:py-16">
       <span className="flex h-14 w-14 items-center justify-center rounded-full bg-accent/10 text-accent">
-        <ViewfinderMark className="h-7 w-7" />
+        <BrandMark className="h-7 w-7" />
       </span>
       <p className="mt-5 font-serif text-xl font-semibold tracking-tight text-ink">
         {title}

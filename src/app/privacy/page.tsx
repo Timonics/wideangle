@@ -17,7 +17,7 @@ export default function PrivacyPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="font-serif text-4xl font-semibold tracking-tight">
+      <h1 className="font-serif text-4xl font-black tracking-tight sm:text-5xl">
         Privacy
       </h1>
 

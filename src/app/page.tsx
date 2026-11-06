@@ -2,12 +2,16 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getConfig } from '@/lib/config';
 import { getArticlePage, getCategories } from '@/lib/data';
-import { articlePath, categoryPath } from '@/lib/urls';
-import { comingUpItems } from '@/lib/coming-up';
+import { articlePath } from '@/lib/urls';
 import { ArticleCard } from '@/components/ArticleCard';
 import { FeaturedArticle } from '@/components/FeaturedArticle';
+import { HeadlineTicker } from '@/components/HeadlineTicker';
+import { TrendingBand } from '@/components/TrendingBand';
+import { EditorsPicks } from '@/components/EditorsPicks';
+import { SectionFront } from '@/components/SectionFront';
 import { SectionLabel } from '@/components/SectionLabel';
 import { EmptyState } from '@/components/EmptyState';
+import { BrandMark } from '@/components/Logo';
 
 export const revalidate = 300;
 
@@ -28,276 +32,240 @@ export function generateMetadata(): Metadata {
   };
 }
 
+/**
+ * The front page — a magazine front page in the Billboard / Business
+ * Insider mould, built for rhythm: every section looks and behaves
+ * differently so the page reads as a curated edition, not a feed.
+ *
+ *   1. Lead — the featured story (editor-picked, else newest) as a
+ *      full-width "Top Story" image with oversized serif type.
+ *   2. Just In — the next four stories as compact image cards.
+ *   3. Trending — a dark numbered band with ghost numerals.
+ *   4. Section fronts — the first categories, each an image-led lead
+ *      beside a column of headlines.
+ *   5. A closing band inviting readers to follow the feed.
+ *
+ * There is no marketing copy here — the About page carries the
+ * publication's story.
+ */
 export default async function HomePage() {
   const { publication } = getConfig();
 
-  // Both reads are independent — fetch them concurrently rather than
-  // serialising the latency.
-  const [articles, categories] = await Promise.all([
-    getArticlePage({ page: 1, pageSize: 10 }),
+  const [page, categories] = await Promise.all([
+    getArticlePage({ page: 1, pageSize: 13 }),
     getCategories(),
   ]);
+  const articles = page.items;
 
-  const [featured, ...latest] = articles.items;
+  if (articles.length === 0) {
+    return (
+      <EmptyState
+        title="No stories yet"
+        action={{ href: '/articles', label: 'Browse the archive' }}
+      >
+        The first story will take pride of place here as soon as it is
+        published.
+      </EmptyState>
+    );
+  }
 
-  // Topics group the latest stories by shared tags, so readers can
-  // follow a thread across articles.
-  const topics = buildTopics(articles.items).slice(0, 6);
+  const lead = articles.find((item) => item.featured) ?? articles[0];
+  const rest = articles.filter((item) => item.id !== lead.id);
+  const justIn = rest.slice(0, 4);
+  const trending = rest.slice(4, 9);
+  const picks = rest.slice(9, 12);
+
+  // Stories already on the page, so the section fronts below surface
+  // something new rather than repeating the lead.
+  const shownIds = new Set(
+    [lead, ...justIn, ...trending, ...picks].map((article) => article.id),
+  );
+
+  // Section fronts run concurrently; each takes the newest unseen
+  // stories from one category (a lead plus up to three headlines).
+  const fronts = await Promise.all(
+    categories.slice(0, 3).map(async (category) => ({
+      category,
+      unseen: (
+        await getArticlePage({ page: 1, pageSize: 8, categoryId: category.id })
+      ).items.filter((article) => !shownIds.has(article.id)),
+    })),
+  );
+  const sections = fronts.filter((front) => front.unseen.length > 0);
 
   return (
     <>
-      {/* Hero — the newest story, magazine style. */}
-      <section className="mb-16">
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-              {publication.name}
-            </p>
-            <h1 className="mt-2 font-serif text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
-              Best of the week
-            </h1>
-            <p className="mt-3 max-w-2xl text-muted">
-              {publication.description}
-            </p>
-          </div>
-          <Link
-            href="/articles"
-            className="rounded-full border border-line px-4 py-2 text-sm font-medium transition-colors hover:border-accent hover:text-accent"
-          >
-            See all posts →
-          </Link>
-        </div>
-
-        {featured !== undefined ? (
-          <FeaturedArticle article={featured} />
-        ) : (
-          <EmptyState title="No stories yet">
-            The archive is ready — the first story will take pride of place
-            right here.
-          </EmptyState>
-        )}
-      </section>
-
-      {/* Categories — browse the archive by subject. */}
-      <section aria-labelledby="categories-heading" className="mb-16">
-        <SectionLabel id="categories-heading">Categories</SectionLabel>
-        {categories.length === 0 ? (
-          <div className="mt-6">
-            <EmptyState title="No categories yet">
-              Categories group the archive by subject. They appear here once
-              they are created in Calliope.
-            </EmptyState>
-          </div>
-        ) : (
-          <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {categories.map((category) => (
-              <li key={category.id}>
-                <Link
-                  href={categoryPath(category.slug)}
-                  className="group relative block h-full overflow-hidden rounded-2xl border border-line bg-card p-5 transition-all duration-300 hover:-translate-y-1 hover:border-accent hover:shadow-xl hover:shadow-accent/10"
-                >
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute -right-3 -top-6 select-none font-serif text-[7rem] font-bold leading-none text-accent/10 transition-colors duration-300 group-hover:text-accent/20"
-                  >
-                    {category.name.charAt(0).toUpperCase()}
-                  </span>
-                  <h3 className="relative font-serif text-xl font-semibold tracking-tight transition-colors group-hover:text-accent">
-                    {category.name}
-                  </h3>
-                  {category.description !== undefined ? (
-                    <p className="relative mt-1.5 line-clamp-2 text-sm text-muted">
-                      {category.description}
-                    </p>
-                  ) : null}
-                  <p className="relative mt-4 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.15em] text-accent">
-                    Browse
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                      className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1"
-                    >
-                      <line x1="5" y1="12" x2="19" y2="12" />
-                      <polyline points="12 5 19 12 12 19" />
-                    </svg>
-                  </p>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {/* Coming up — curated teasers for what's next. */}
-      <section aria-labelledby="coming-up-heading" className="mb-16">
-        <SectionLabel id="coming-up-heading">Coming up</SectionLabel>
-        {comingUpItems.length === 0 ? (
-          <EmptyState title="Nothing scheduled">
-            Coming-up teasers are curated by hand — check back soon for
-            what&apos;s next.
-          </EmptyState>
-        ) : (
-          <ul className="divide-y divide-line border-y border-line">
-            {comingUpItems.map((item) => (
-              <li
-                key={item.title}
-                className="flex flex-col gap-1 py-4 sm:flex-row sm:items-baseline sm:gap-8"
-              >
-                {item.date !== undefined ? (
-                  <p className="w-36 shrink-0 text-sm font-semibold uppercase tracking-wide text-accent">
-                    {item.date}
-                  </p>
-                ) : null}
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold text-ink">{item.title}</h3>
-                  {item.description !== undefined ? (
-                    <p className="mt-0.5 text-sm text-muted">
-                      {item.description}
-                    </p>
-                  ) : null}
-                </div>
-                {item.href !== undefined ? (
-                  <Link
-                    href={item.href}
-                    className="shrink-0 text-sm font-semibold text-accent underline decoration-accent/45 underline-offset-4 transition-colors hover:decoration-accent"
-                  >
-                    Details →
-                  </Link>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {/* Topics — latest stories grouped by shared tags, on a dark band. */}
-      <section aria-labelledby="topics-heading" className="mb-16">
-        <SectionLabel id="topics-heading">Topics</SectionLabel>
-        {topics.length === 0 ? (
-          <EmptyState title="No topics yet">
-            Topics form when stories share tags. Publish a few stories with
-            tags and the conversations will collect here.
-          </EmptyState>
-        ) : (
-          <div className="rounded-3xl bg-[#181626] p-5 dark:bg-[#1e1c33] sm:p-8">
-            <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {topics.map((topic) => (
-                <li
-                  key={topic.tag.id}
-                  className="group flex h-full flex-col rounded-2xl border border-white/10 bg-white/5 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-accent hover:bg-white/10"
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-white/45">
-                      Topic
-                    </p>
-                    <p className="rounded-full bg-accent/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-accent">
-                      {topic.articles.length}{' '}
-                      {topic.articles.length === 1 ? 'story' : 'stories'}
-                    </p>
-                  </div>
-                  <h3 className="mt-2 font-serif text-2xl font-semibold tracking-tight text-white">
-                    <span className="text-accent">#</span>
-                    {topic.tag.name}
-                  </h3>
-                  <ul className="mt-3 flex-1 space-y-2.5 text-sm">
-                    {topic.articles.map((article) => (
-                      <li
-                        key={article.id}
-                        className="border-l-2 border-white/10 pl-3 transition-colors hover:border-accent"
-                      >
-                        <Link
-                          href={articlePath(article.slug)}
-                          className="text-white/70 underline decoration-transparent underline-offset-2 transition-colors hover:text-accent hover:decoration-accent"
-                        >
-                          {article.title}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    href={articlePath(topic.articles[0].slug)}
-                    className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.15em] text-accent"
-                  >
-                    Read the thread
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                      className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1"
-                    >
-                      <line x1="5" y1="12" x2="19" y2="12" />
-                      <polyline points="12 5 19 12 12 19" />
-                    </svg>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </section>
-
-      {/* Latest stories — everything else, newest first. */}
-      <section aria-labelledby="latest-heading">
-        <SectionLabel
-          id="latest-heading"
-          action={
-            articles.hasNext
-              ? { href: '/articles', label: 'View all ↗' }
-              : undefined
-          }
+      {/* Dateline — the front page is an edition, not a feed. The date
+          truncates rather than crowds the label on narrow screens. */}
+      <div className="mb-6 flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.2em] text-muted sm:mb-8 sm:gap-4">
+        <time
+          dateTime={new Date().toISOString().slice(0, 10)}
+          className="min-w-0 truncate text-gold"
         >
-          Latest stories
-        </SectionLabel>
+          {new Date().toLocaleDateString(publication.locale, {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })}
+        </time>
+        <span aria-hidden="true" className="h-px flex-1 bg-line" />
+        <span className="shrink-0">Latest edition</span>
+      </div>
 
-        {latest.length === 0 ? (
-          <EmptyState title="No stories yet">
-            {featured === undefined
-              ? 'Once the first story is published it will appear here.'
-              : 'More stories are on the way.'}
+      {/* Lead — the "Top Story". */}
+      <FeaturedArticle article={lead} />
+
+      {/* Headline ticker — the rolling index of what just landed. */}
+      <div className="mt-6 sm:mt-8">
+        <HeadlineTicker articles={rest.slice(0, 6)} />
+      </div>
+
+      {rest.length === 0 ? (
+        <div className="mt-16">
+          <EmptyState title="More stories are on the way">
+            The archive is just getting started. The first story is above;
+            the rest will follow here.
           </EmptyState>
-        ) : (
-          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {latest.map((article) => (
-              <li
-                key={article.id}
-                className="rounded-2xl border border-line bg-card p-4 transition-all duration-300 hover:-translate-y-1 hover:border-accent hover:shadow-xl hover:shadow-accent/10"
-              >
+        </div>
+      ) : null}
+
+      {/* Just In — the next four stories, compact image cards. */}
+      {justIn.length > 0 ? (
+        <section aria-labelledby="just-in-heading" className="mt-16 sm:mt-20">
+          <SectionLabel
+            id="just-in-heading"
+            action={
+              page.hasNext
+                ? { href: '/articles', label: 'All stories' }
+                : undefined
+            }
+          >
+            Just In
+          </SectionLabel>
+          <ul className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+            {justIn.map((article) => (
+              <li key={article.id}>
                 <ArticleCard article={article} headingLevel={3} image />
               </li>
             ))}
           </ul>
-        )}
+        </section>
+      ) : null}
+
+      {/* Trending — the dark numbered band. */}
+      {trending.length > 0 ? (
+        <TrendingBand id="trending-heading" articles={trending} />
+      ) : null}
+
+      {/* The Big Read — one story given room, beside compact rows. */}
+      {picks.length > 0 ? (
+        <EditorsPicks
+          id="picks-heading"
+          lead={picks[0]}
+          items={picks.slice(1, 3)}
+          hasMore={page.hasNext}
+        />
+      ) : null}
+
+      {/* Section fronts — one per category, lead + headline column. */}
+      {sections.map(({ category, unseen }) => (
+        <SectionFront
+          key={category.id}
+          id={`front-${category.id}`}
+          category={category}
+          lead={unseen[0]}
+          items={unseen.slice(1, 4)}
+        />
+      ))}
+
+      {/* Closing band — a pull-quote from the lead story over the
+          follow invitation. */}
+      <section
+        aria-labelledby="follow-heading"
+        className="relative mt-20 overflow-hidden rounded-3xl bg-night px-6 py-14 text-center sm:px-12 sm:py-16"
+      >
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-accent via-gold to-accent"
+        />
+        <BrandMark
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-12 -right-8 h-52 w-52 rotate-12 text-white/[0.05]"
+        />
+        <div className="relative">
+          <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-gold">
+            {lead.excerpt !== undefined ? 'From the lead story' : 'Stay in the loop'}
+          </p>
+          {lead.excerpt !== undefined ? (
+            <>
+              <h2
+                id="follow-heading"
+                className="mx-auto mt-4 line-clamp-4 max-w-4xl font-serif text-3xl font-medium italic leading-tight tracking-tight text-white sm:line-clamp-6 sm:text-5xl"
+              >
+                “{lead.excerpt}”
+              </h2>
+              <p className="mt-5 text-sm font-semibold uppercase tracking-[0.15em] text-white/50">
+                <Link
+                  href={articlePath(lead.slug)}
+                  className="text-gold transition-colors hover:text-white"
+                >
+                  Read the full story
+                </Link>
+                {lead.author.name !== '' ? ` · ${lead.author.name}` : ''}
+              </p>
+            </>
+          ) : (
+            <>
+              <h2
+                id="follow-heading"
+                className="mx-auto mt-3 max-w-2xl font-serif text-3xl font-black leading-tight tracking-tight text-white sm:text-5xl"
+              >
+                There’s more to the{' '}
+                <em className="italic text-gold">question.</em>
+              </h2>
+              <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white/60 sm:text-base">
+                Follow {publication.name} and every new story lands in
+                your reader the moment it is published — no account, no
+                noise.
+              </p>
+            </>
+          )}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+            <a
+              href="/feed.xml"
+              className="inline-flex items-center gap-2 rounded-full bg-gold px-6 py-3 text-sm font-bold uppercase tracking-[0.1em] text-night shadow-lg shadow-gold/25 transition-all hover:bg-gold-deep hover:shadow-gold/40"
+            >
+              <RssIcon />
+              Subscribe to the feed
+            </a>
+            <Link
+              href="/about"
+              className="rounded-full border border-white/25 px-6 py-3 text-sm font-bold uppercase tracking-[0.1em] text-white/85 transition-colors hover:border-gold hover:text-gold"
+            >
+              About {publication.name}
+            </Link>
+          </div>
+        </div>
       </section>
     </>
   );
 }
 
-/**
- * Group articles by their tags, keeping the tag's first-seen order and
- * at most three articles per topic.
- */
-function buildTopics(
-  articles: Awaited<ReturnType<typeof getArticlePage>>['items'],
-) {
-  const byTag = new Map<string, { tag: (typeof articles)[number]['tags'][number]; articles: typeof articles }>();
-  for (const article of articles) {
-    for (const tag of article.tags) {
-      const entry = byTag.get(tag.id);
-      if (entry === undefined) {
-        byTag.set(tag.id, { tag, articles: [article] });
-      } else if (entry.articles.length < 3) {
-        entry.articles.push(article);
-      }
-    }
-  }
-  return [...byTag.values()];
+function RssIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      aria-hidden="true"
+      className="h-4 w-4"
+    >
+      <path d="M4 11a9 9 0 0 1 9 9" />
+      <path d="M4 4a16 16 0 0 1 16 16" />
+      <circle cx="5" cy="19" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
 }

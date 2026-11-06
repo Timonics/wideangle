@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1a1630"/>
+      <stop offset="0.55" stop-color="#241c4a"/>
+      <stop offset="1" stop-color="#2d2160"/>
+    </linearGradient>
+    <linearGradient id="rule" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5440dc"/>
+      <stop offset="1" stop-color="#f2b45a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <g opacity="0.06" fill="none" stroke="#ffffff" stroke-width="2">
+    <circle cx="1450" cy="80" r="260"/>
+    <circle cx="120" cy="860" r="320"/>
+  </g>
+  <text x="800" y="430" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="150" font-weight="bold" fill="#ffffff" opacity="0.9">W</text>
+  <rect x="640" y="500" width="320" height="6" rx="3" fill="url(#rule)"/>
+  <text x="800" y="580" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="40" letter-spacing="14" fill="#ffffff" opacity="0.55">WIDEANGLE</text>
+  <text x="800" y="660" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="30" font-style="italic" fill="#f2b45a" opacity="0.85">Image unavailable</text>
+</svg>

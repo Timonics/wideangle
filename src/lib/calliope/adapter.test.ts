@@ -120,28 +120,29 @@ describe('buildOutline', () => {
   });
 });
 
+const baseArticle: UpstreamArticle = {
+  id: '11111111-1111-4111-8111-111111111111',
+  slug: 'why-we-rebuilt-the-content-api',
+  title: 'Why we rebuilt the content API',
+  excerpt: 'The old API leaked draft slugs.',
+  content: [{ type: 'paragraph', data: { text: 'Hello' } }],
+  coverImageUrl: null,
+  publishedAt: '2026-10-12T10:00:00.000Z',
+  author: {
+    id: 'a1111111-1111-4111-8111-111111111111',
+    name: 'Michael Oderinde',
+    bio: 'Software engineer.',
+    avatarUrl: null,
+  },
+  category: {
+    id: 'c1111111-1111-4111-8111-111111111111',
+    name: 'Engineering',
+    slug: 'engineering',
+  },
+  tags: [{ id: 'd1', name: 'TypeScript', slug: 'typescript' }],
+};
+
 describe('toArticleView', () => {
-  const baseArticle: UpstreamArticle = {
-    id: '11111111-1111-4111-8111-111111111111',
-    slug: 'why-we-rebuilt-the-content-api',
-    title: 'Why we rebuilt the content API',
-    excerpt: 'The old API leaked draft slugs.',
-    content: [{ type: 'paragraph', data: { text: 'Hello' } }],
-    coverImageUrl: null,
-    publishedAt: '2026-10-12T10:00:00.000Z',
-    author: {
-      id: 'a1111111-1111-4111-8111-111111111111',
-      name: 'Michael Oderinde',
-      bio: 'Software engineer.',
-      avatarUrl: null,
-    },
-    category: {
-      id: 'c1111111-1111-4111-8111-111111111111',
-      name: 'Engineering',
-      slug: 'engineering',
-    },
-    tags: [{ id: 'd1', name: 'TypeScript', slug: 'typescript' }],
-  };
 
   it('maps the upstream shape onto the frontend view', () => {
     const view = toArticleView(baseArticle);
@@ -212,5 +213,122 @@ describe('toArticleView', () => {
       coverImageUrl: 'https://cdn.example.com/a.png',
     });
     expect(view.heroImage?.url).toBe('https://cdn.example.com/a.png');
+  });
+});
+
+describe('extended contract mapping', () => {
+  const extendedArticle: UpstreamArticle = {
+    ...baseArticle,
+    subtitle: '  Why the schema is the product  ',
+    featured: true,
+    series: {
+      id: 'd1d1d1d1-d1d1-4d1d-8d1d-d1d1d1d1d1d1',
+      name: 'Shipping Calliope',
+      slug: 'shipping-calliope',
+      position: 2,
+      total: 3,
+    },
+    readingTimeMinutes: 7,
+    canonicalUrl: 'https://example.com/original-post',
+    coverImage: {
+      url: 'https://cdn.example.com/cover.png',
+      alt: 'A cover',
+      caption: 'Cover caption',
+      credit: 'Jane Doe',
+      width: 1600,
+      height: 900,
+    },
+    corrections: [
+      { date: '2026-10-20T00:00:00.000Z', note: 'Fixed the date.' },
+      { date: 'not-a-date', note: 'malformed — dropped' },
+      { date: '2026-10-21T00:00:00.000Z', note: '   ' },
+    ],
+    seo: {
+      socialImageUrl: 'https://cdn.example.com/social.png',
+      socialTitle: 'Social title',
+      socialDescription: 'Social description',
+      noIndex: true,
+    },
+    author: {
+      ...baseArticle.author,
+      links: [
+        { label: 'GitHub', url: 'https://github.com/example' },
+        { label: 'Bad', url: 'javascript:alert(1)' },
+      ],
+    },
+  };
+
+  it('maps the extended fields onto the view', () => {
+    const view = toArticleView(extendedArticle);
+    expect(view.subtitle).toBe('Why the schema is the product');
+    expect(view.featured).toBe(true);
+    expect(view.series?.slug).toBe('shipping-calliope');
+    expect(view.series?.position).toBe(2);
+    expect(view.series?.total).toBe(3);
+    expect(view.readingTimeMinutes).toBe(7);
+    expect(view.canonicalUrl).toBe('https://example.com/original-post');
+    expect(view.corrections).toEqual([
+      { date: '2026-10-20T00:00:00.000Z', note: 'Fixed the date.' },
+    ]);
+    expect(view.seo?.socialTitle).toBe('Social title');
+    expect(view.seo?.socialDescription).toBe('Social description');
+    expect(view.seo?.socialImageUrl).toBe('https://cdn.example.com/social.png');
+    expect(view.seo?.noIndex).toBe(true);
+    expect(view.author.links).toEqual([
+      { label: 'GitHub', url: 'https://github.com/example' },
+    ]);
+  });
+
+  it('prefers the structured cover image with its own alt text', () => {
+    const view = toArticleView({
+      ...extendedArticle,
+      coverImageUrl: 'https://cdn.example.com/legacy.png',
+    });
+    expect(view.heroImage?.url).toBe('https://cdn.example.com/cover.png');
+    expect(view.heroImage?.alt).toBe('A cover');
+    expect(view.heroImage?.caption).toBe('Cover caption');
+    expect(view.heroImage?.credit).toBe('Jane Doe');
+    expect(view.heroImage?.width).toBe(1600);
+    expect(view.heroImage?.height).toBe(900);
+  });
+
+  it('still falls back to the legacy cover URL with title-derived alt', () => {
+    const view = toArticleView({
+      ...baseArticle,
+      coverImageUrl: 'https://cdn.example.com/legacy.png',
+    });
+    expect(view.heroImage?.url).toBe('https://cdn.example.com/legacy.png');
+    expect(view.heroImage?.alt).toBe('Why we rebuilt the content API');
+  });
+
+  it('drops an unsafe structured cover URL and tries the legacy mirror', () => {
+    const view = toArticleView({
+      ...baseArticle,
+      coverImage: {
+        url: 'javascript:alert(1)',
+        alt: 'nope',
+        caption: null,
+        credit: null,
+        width: 1600,
+        height: 900,
+      },
+      coverImageUrl: 'https://cdn.example.com/safe.png',
+    });
+    expect(view.heroImage?.url).toBe('https://cdn.example.com/safe.png');
+  });
+
+  it('drops an unsafe canonical URL', () => {
+    const view = toArticleView({
+      ...baseArticle,
+      canonicalUrl: 'javascript:alert(1)',
+    });
+    expect(view.canonicalUrl).toBeUndefined();
+  });
+
+  it('defaults featured to false and corrections to empty', () => {
+    const view = toArticleView(baseArticle);
+    expect(view.featured).toBe(false);
+    expect(view.corrections).toEqual([]);
+    expect(view.seo).toBeUndefined();
   });
 });

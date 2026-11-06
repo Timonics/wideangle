@@ -28,11 +28,13 @@ import {
   fetchArticlePage,
   fetchAuthors,
   fetchCategories,
+  fetchSeriesBySlug,
   findCategoryBySlug,
 } from './calliope/adapter';
 import { UpstreamNotFoundError } from './calliope/client';
 import type { ArticleView } from './types';
 import type { PageResult } from './types';
+import type { SeriesDetailView } from './types';
 
 /**
  * A cache tag namespace for this publication.
@@ -198,6 +200,22 @@ export function getAuthors(): Promise<
     {
       revalidate: revalidateSeconds,
       tags: [scopeTag('authors')],
+    },
+  )();
+}
+
+/** Fetch a follow-up series by slug (prev/next navigation on articles). */
+export function getSeries(
+  slug: string,
+): Promise<SeriesDetailView> {
+  const { revalidateSeconds } = getConfig().calliope;
+
+  return unstable_cache(
+    async () => fetchSeriesBySlug(slug),
+    ['wideangle', 'series', slug],
+    {
+      revalidate: revalidateSeconds,
+      tags: [scopeTag('series', slug)],
     },
   )();
 }

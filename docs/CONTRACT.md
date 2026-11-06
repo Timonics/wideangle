@@ -5,6 +5,11 @@ what it does not.
 
 - **Discovered against**: `calliope` @ `c987724`, running locally on
   `http://localhost:3002` with `calliope-postgres` on `:5435`.
+- **Revised for**: the extended article contract (series / featured /
+  corrections / structured `coverImage` / SEO object), implemented in
+  Calliope's public projection and consumed by the adapter since the
+  revision below. Sections marked **closed** document gaps that no
+  longer exist; they are kept for history.
 - **Method**: seeded realistic content (published / draft / archived),
   then probed the anonymous public routes directly.
 - **Adapter**: [`src/lib/calliope/`](../src/lib/calliope/) — the only
@@ -21,6 +26,7 @@ All of these are `@Public()` in Calliope and require **no token**.
 | `GET /v1/blogs/:blogId/articles` | none | Homepage, archive, category listings, sitemap, feed |
 | `GET /v1/blogs/:blogId/articles/:slug` | none | Article detail |
 | `GET /v1/blogs/:blogId/articles/:slug?include=related` | none | Article detail (curated related set) |
+| `GET /v1/blogs/:blogId/series/:slug` | none | Follow-up series: ordered published articles for prev/next navigation |
 | `GET /v1/blogs/:blogId/categories` | none | Category pages, homepage nav |
 | `GET /v1/blogs/:blogId/authors` | none | Byline, /about |
 

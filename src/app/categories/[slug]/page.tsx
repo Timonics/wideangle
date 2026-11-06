@@ -128,29 +128,29 @@ export default async function CategoryPage({
         </ol>
       </nav>
 
-      <header className="relative mb-10 overflow-hidden rounded-3xl bg-[#181626] p-8 dark:bg-[#1e1c33] sm:p-12">
+      <header className="relative mb-10 overflow-hidden rounded-3xl bg-night p-8 sm:p-12">
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute -right-4 -top-10 select-none font-serif text-[10rem] font-bold leading-none text-accent/10"
+          className="pointer-events-none absolute -right-4 -top-10 select-none font-serif text-[10rem] font-bold leading-none text-gold/10"
         >
           {category.name.charAt(0).toUpperCase()}
         </span>
         <div
           aria-hidden="true"
-          className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-accent via-accent/40 to-transparent"
+          className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-accent via-gold to-transparent"
         />
         <div className="relative">
           <div className="flex flex-wrap items-center gap-3">
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-accent">
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-gold">
               Category
             </p>
-            <p className="rounded-full bg-accent/15 px-3 py-0.5 text-xs font-bold text-accent">
+            <p className="rounded-full bg-gold/15 px-3 py-0.5 text-xs font-bold text-gold">
               {articles.total === 0
                 ? 'No articles yet'
                 : `${articles.total} ${articles.total === 1 ? 'article' : 'articles'}`}
             </p>
           </div>
-          <h1 className="mt-3 font-serif text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          <h1 className="mt-3 font-serif text-4xl font-black tracking-tight text-white sm:text-6xl">
             {category.name}
           </h1>
           {category.description !== undefined ? (
@@ -199,7 +199,7 @@ export default async function CategoryPage({
                   ? categoryPath(category.slug)
                   : `${categoryPath(category.slug)}?page=${articles.page - 1}`
               }
-              className="rounded-lg border border-line px-4 py-2 text-sm font-medium transition-colors hover:border-accent hover:text-accent"
+              className="rounded-full border border-line px-5 py-2 text-xs font-bold uppercase tracking-[0.12em] transition-colors hover:border-gold hover:text-gold"
               rel="prev"
             >
               ← Newer
@@ -215,7 +215,7 @@ export default async function CategoryPage({
           {articles.hasNext ? (
             <Link
               href={`${categoryPath(category.slug)}?page=${articles.page + 1}`}
-              className="rounded-lg border border-line px-4 py-2 text-sm font-medium transition-colors hover:border-accent hover:text-accent"
+              className="rounded-full border border-line px-5 py-2 text-xs font-bold uppercase tracking-[0.12em] transition-colors hover:border-gold hover:text-gold"
               rel="next"
             >
               Older →

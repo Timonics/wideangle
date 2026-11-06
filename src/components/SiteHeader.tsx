@@ -21,17 +21,17 @@ const PRIMARY_LINKS = [
 export function SiteHeader({ name }: { name: string }) {
   return (
     <header className="sticky top-0 z-40 shadow-lg shadow-black/5">
-      <div className="bg-[#181626] dark:bg-[#1e1c33]">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-3.5">
+      <div className="bg-night">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-3.5 sm:py-4">
           <Logo name={name} onDark />
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-5">
             <nav aria-label="Primary" className="hidden sm:block">
-              <ul className="flex items-center gap-6 text-sm font-semibold text-white/85">
+              <ul className="flex items-center gap-7 text-[13px] font-bold uppercase tracking-[0.14em] text-white/80">
                 {PRIMARY_LINKS.map((link) => (
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="transition-colors hover:text-white"
+                      className="transition-colors hover:text-gold"
                     >
                       {link.label}
                     </Link>
@@ -42,7 +42,7 @@ export function SiteHeader({ name }: { name: string }) {
 
             <a
               href="/feed.xml"
-              className="hidden items-center gap-1.5 rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-accent-deep sm:inline-flex"
+              className="hidden items-center gap-1.5 rounded-full bg-accent px-4 py-1.5 text-[13px] font-bold uppercase tracking-[0.1em] text-white shadow-lg shadow-accent/25 transition-all hover:bg-accent-deep hover:shadow-accent/40 sm:inline-flex"
             >
               <RssIcon />
               RSS
@@ -54,7 +54,7 @@ export function SiteHeader({ name }: { name: string }) {
               <details className="group relative sm:hidden">
                 <summary
                   aria-label="Menu"
-                  className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-full border border-white/25 text-white/85 transition-colors hover:border-accent hover:text-white [&::-webkit-details-marker]:hidden"
+                  className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-full border border-white/25 text-white/85 transition-colors hover:border-gold hover:text-white [&::-webkit-details-marker]:hidden"
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -72,7 +72,7 @@ export function SiteHeader({ name }: { name: string }) {
                 </summary>
                 <nav
                   aria-label="Primary"
-                  className="absolute right-0 top-11 z-50 w-56 rounded-xl border border-white/10 bg-[#221f36] p-2 shadow-xl"
+                  className="absolute right-0 top-11 z-50 w-56 rounded-xl border border-white/10 bg-night-2 p-2 shadow-xl"
                 >
                   <ul className="text-sm font-medium">
                     {PRIMARY_LINKS.map((link) => (
@@ -103,6 +103,11 @@ export function SiteHeader({ name }: { name: string }) {
             </div>
           </div>
         </div>
+        {/* The masthead's signature: a thin indigo-to-gold gradient rule. */}
+        <div
+          aria-hidden="true"
+          className="h-[3px] bg-gradient-to-r from-accent via-gold to-accent"
+        />
       </div>
       <CategoryBar />
     </header>

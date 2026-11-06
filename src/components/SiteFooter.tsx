@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ViewfinderMark } from '@/components/Logo';
+import { BrandMark } from '@/components/Logo';
 
 const RESOURCE_LINKS = [
   { href: '/articles', label: 'Articles' },
@@ -26,17 +26,22 @@ export function SiteFooter({
   const year = new Date().getFullYear();
 
   return (
-    <footer className="relative mt-8 bg-[#181626] text-white/70 dark:bg-[#1e1c33]">
+    <footer className="relative mt-8 overflow-hidden bg-night text-white/70">
+      {/* Giant watermark of the viewfinder mark — a signature backdrop. */}
+      <BrandMark
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-16 -right-10 h-72 w-72 rotate-12 text-white/[0.04]"
+      />
       <div
         aria-hidden="true"
-        className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-accent/40 to-transparent"
+        className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-gold to-transparent"
       />
-      <div className="mx-auto w-full max-w-6xl px-5 py-14">
+      <div className="relative mx-auto w-full max-w-6xl px-5 py-14">
         <div className="grid gap-10 sm:grid-cols-[1.5fr_1fr_1fr]">
           <div>
             <div className="flex items-center gap-2.5">
-              <ViewfinderMark className="h-8 w-8 text-accent" />
-              <p className="font-serif text-2xl font-semibold tracking-tight text-white">
+              <BrandMark className="h-8 w-8 text-gold" />
+              <p className="font-serif text-3xl font-black tracking-tight text-white">
                 {name}
               </p>
             </div>
@@ -45,14 +50,14 @@ export function SiteFooter({
             </p>
             <a
               href={`mailto:${contactEmail}`}
-              className="mt-4 inline-block text-sm font-medium text-accent underline decoration-accent/45 underline-offset-4 transition-colors hover:decoration-accent"
+              className="mt-4 inline-block text-sm font-medium text-gold underline decoration-gold/45 underline-offset-4 transition-colors hover:decoration-gold"
             >
               {contactEmail}
             </a>
           </div>
 
           <nav aria-label="Resources">
-            <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-accent">
+            <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-gold">
               Resources
             </h2>
             <ul className="mt-5 space-y-3 text-sm">
@@ -65,7 +70,7 @@ export function SiteFooter({
           </nav>
 
           <nav aria-label="Legal">
-            <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-accent">
+            <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-gold">
               Legal
             </h2>
             <ul className="mt-5 space-y-3 text-sm">
@@ -84,8 +89,8 @@ export function SiteFooter({
             requires no account.
           </p>
           <p className="flex items-center gap-1.5">
-            <ViewfinderMark className="h-4 w-4 text-accent" />
-            Written and edited by one person.
+            <BrandMark className="h-4 w-4 text-gold" />
+            There’s more to the question.
           </p>
         </div>
       </div>

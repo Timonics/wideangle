@@ -7,22 +7,21 @@ entry says what it is, why it exists, and what would close it.
 
 ## 1. No modification date on articles
 
-**What**: An article page never shows an "Updated" date, and the
-`BlogPosting` JSON-LD never emits `dateModified`.
+**CLOSED — resolved by the extended upstream contract.** The current
+Calliope public projection publishes `updatedAt` (a real modification
+time). When it is present, an article page shows an "Updated …" line and
+the `BlogPosting` JSON-LD emits a genuine `dateModified`. When a given
+article has never been modified, `updatedAt` still exists upstream but
+WideAngle only renders it when it differs meaningfully — no
+deployment-driven date inflation (PRD §13).
 
-**Why**: Calliope's public projection strips `updatedAt` (and
-`createdAt`). A public read physically cannot see the modification
-timestamp — see [`CONTRACT.md` §4 G1](CONTRACT.md#4-capability-gaps-real-verified).
+The historical note below explains why the field was omitted before,
+and why it must never be fabricated:
 
 The alternative — emitting `dateModified: new Date().toISOString()` —
-would make every article look freshly modified on every request. PRD §13
-explicitly forbids "deployment-driven date inflation". A search engine
-that sees a `dateModified` newer than the content would eventually
-distrust the whole site's dates.
-
-**To close it**: Calliope adds `updatedAt` to `toPublicArticle()`.
-`ArticleView.modifiedAt` and the `dateModified` emission are already
-wired; no template change is needed.
+would make every article look freshly modified on every request. A
+search engine that sees a `dateModified` newer than the content would
+eventually distrust the whole site's dates.
 
 ---
 

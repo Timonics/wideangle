@@ -208,7 +208,7 @@ export function getConfig(): WideAngleConfig {
       name: optional('WIDEANGLE_PUBLICATION_NAME') ?? 'WideAngle',
       description:
         optional('WIDEANGLE_PUBLICATION_DESCRIPTION') ??
-        'A single-author publication about building and operating content infrastructure.',
+        'Clear answers to practical questions, with thoughtful explanations, useful examples, and sources you can check.',
       canonicalOrigin,
       locale: optional('WIDEANGLE_LOCALE') ?? 'en',
       ...(publicationId === undefined ? {} : { publicationId }),

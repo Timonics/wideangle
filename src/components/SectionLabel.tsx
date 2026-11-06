@@ -1,9 +1,9 @@
 import Link from 'next/link';
 
 /**
- * A slanted accent label with an extending rule — the section marker
- * used across the homepage. An optional action link (e.g. "View all")
- * sits at the right end of the rule.
+ * An editorial section header: a serif heading sitting on a hairline
+ * rule, with an optional action link ("View all", "More in X") at the
+ * right end. Used for the story sections on the front page.
  */
 export function SectionLabel({
   id,
@@ -15,18 +15,21 @@ export function SectionLabel({
   action?: { href: string; label: string };
 }) {
   return (
-    <div className="mb-6 flex items-center gap-4 sm:mb-8">
+    <div className="mb-8 flex flex-wrap items-baseline gap-x-4 gap-y-2 border-b-2 border-ink pb-3 sm:mb-10 sm:gap-x-5">
       <h2
         id={id}
-        className="-skew-x-6 rounded-md bg-accent px-4 py-2 text-sm font-bold uppercase tracking-wider text-white"
+        className="min-w-0 shrink font-serif text-2xl font-black tracking-tight sm:text-3xl lg:text-4xl"
       >
-        <span className="block skew-x-6">{children}</span>
+        {children}
       </h2>
-      <span aria-hidden="true" className="h-px flex-1 bg-line" />
+      <span
+        aria-hidden="true"
+        className="mb-1 hidden h-px flex-1 bg-line sm:block"
+      />
       {action !== undefined ? (
         <Link
           href={action.href}
-          className="shrink-0 rounded-full border border-line px-4 py-1.5 text-sm font-semibold text-muted transition-colors hover:border-accent hover:text-accent"
+          className="shrink-0 text-xs font-bold uppercase tracking-[0.15em] text-gold underline decoration-gold/40 underline-offset-4 transition-colors hover:text-accent hover:decoration-accent"
         >
           {action.label}
         </Link>

@@ -2,99 +2,139 @@ import Link from 'next/link';
 import type { ArticleView } from '@/lib/types';
 import { articlePath, categoryPath } from '@/lib/urls';
 import { formatDate } from '@/lib/seo';
+import SmartImage from '@/components/SmartImage';
+import { BrandMark } from '@/components/Logo';
 
 /**
- * The featured hero card for the homepage: a large rounded image card
- * with the title overlaid on a gradient, magazine style.
+ * The lead story on the front page — a split editorial hero: oversized
+ * serif headline and standfirst on the left, a tall framed image on
+ * the right. On mobile the image leads and the type stacks beneath
+ * it. Its heading is the page's <h1> — the front page has no other
+ * page-level heading.
  *
  * The image is a plain img (arbitrary editor-chosen CDN, not known at
- * build time — see ArticleBody). The whole heading is a single link, so
- * there is one tab stop and one link announcement.
+ * build time) loaded eagerly because it is the LCP element. The
+ * heading is a single link: one tab stop, one announcement.
  */
 export function FeaturedArticle({ article }: { article: ArticleView }) {
   const primaryCategory = article.categories[0];
   const image = article.heroImage;
 
   return (
-    <article className="group relative overflow-hidden rounded-2xl bg-accent-deep">
-      {image !== undefined ? (
-        /* Editor-chosen CDN image; not available to next/image at
-           build time. Explicit dims keep CLS at zero. */
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={image.url}
-          alt={image.alt}
-          width={image.width}
-          height={image.height}
-          className="aspect-[16/9] w-full object-cover sm:aspect-[21/9]"
-        />
-      ) : (
-        <div className="aspect-[16/9] w-full sm:aspect-[21/9]" aria-hidden="true" />
-      )}
-
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
-
-      <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8">
-        <div className="flex flex-wrap items-center gap-2 text-xs">
+    <section
+      aria-label="Top story"
+      className="grid items-center gap-8 lg:grid-cols-[1.05fr_1fr] lg:gap-14"
+    >
+      {/* Type column */}
+      <div className="order-2 lg:order-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-gold px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-night">
+            {article.featured ? 'Editor’s pick' : 'Top story'}
+          </span>
           {primaryCategory !== undefined ? (
             <Link
               href={categoryPath(primaryCategory.slug)}
-              className="rounded-full bg-white/15 px-3 py-1 font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/30"
+              className="rounded-full bg-accent px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-white transition-colors hover:bg-accent-deep"
             >
               {primaryCategory.name}
             </Link>
           ) : null}
-          {article.publishedAt !== '' ? (
-            <time
-              dateTime={article.publishedAt}
-              className="text-white/75"
-            >
-              {formatDate(article.publishedAt)}
-            </time>
-          ) : null}
         </div>
 
-        <h2 className="mt-3 max-w-2xl font-serif text-2xl font-semibold leading-tight tracking-tight sm:text-4xl">
-          <Link
-            href={articlePath(article.slug)}
-            className="text-white underline decoration-transparent underline-offset-4 transition-colors hover:decoration-white"
-          >
+        <h1 className="mt-4 break-words font-serif text-4xl font-black leading-[1.04] tracking-tight sm:text-5xl xl:text-6xl">
+          <Link href={articlePath(article.slug)} className="story-link">
             {article.title}
           </Link>
-        </h2>
+        </h1>
 
         {article.excerpt !== undefined ? (
-          <p className="mt-2 hidden max-w-xl text-sm text-white/85 sm:block">
+          <p className="mt-4 line-clamp-3 max-w-xl text-lg leading-relaxed text-muted">
             {article.excerpt}
           </p>
         ) : null}
 
-        {article.author.name !== '' ? (
-          <p className="mt-3 text-xs font-medium uppercase tracking-[0.15em] text-white/70">
-            {article.author.name}
-          </p>
-        ) : null}
+        <p className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+          {article.publishedAt !== '' ? (
+            <time dateTime={article.publishedAt}>
+              {formatDate(article.publishedAt)}
+            </time>
+          ) : null}
+          {article.author.name !== '' ? (
+            <>
+              <span aria-hidden="true" className="text-gold">
+                ·
+              </span>
+              <span>
+                By <span className="font-medium text-ink">{article.author.name}</span>
+              </span>
+            </>
+          ) : null}
+          {article.readingTimeMinutes !== undefined ? (
+            <>
+              <span aria-hidden="true" className="text-gold">
+                ·
+              </span>
+              <span>{article.readingTimeMinutes} min read</span>
+            </>
+          ) : null}
+        </p>
+
+        <Link
+          href={articlePath(article.slug)}
+          className="mt-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-gold transition-colors hover:text-accent"
+        >
+          Read the story
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            className="h-4 w-4"
+          >
+            <line x1="5" y1="12" x2="19" y2="12" />
+            <polyline points="12 5 19 12 12 19" />
+          </svg>
+        </Link>
       </div>
 
-      <Link
-        href={articlePath(article.slug)}
-        aria-hidden="true"
-        tabIndex={-1}
-        className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm transition-colors hover:bg-white/30"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="h-4 w-4"
-        >
-          <line x1="7" y1="17" x2="17" y2="7" />
-          <polyline points="7 7 17 7 17 17" />
-        </svg>
-      </Link>
-    </article>
+      {/* Image column — leads on mobile, right on desktop. */}
+      <figure className="group relative order-1 lg:order-2">
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 translate-x-3 translate-y-3 rounded-3xl border-2 border-gold/40"
+        />
+        {image !== undefined ? (
+          <Link
+            href={articlePath(article.slug)}
+            aria-hidden="true"
+            tabIndex={-1}
+            className="relative block overflow-hidden rounded-3xl"
+          >
+            {/* Editor-chosen CDN image; not available to next/image at
+                build time. Explicit dims keep CLS at zero. SmartImage
+                falls back to a local placeholder if the CDN fails. */}
+            <SmartImage
+              src={image.url}
+              alt={image.alt}
+              width={image.width}
+              height={image.height}
+              loading="eager"
+              decoding="async"
+              className="aspect-[16/10] w-full object-cover transition-transform duration-700 group-hover:scale-[1.03] lg:aspect-[4/5]"
+            />
+          </Link>
+        ) : (
+          <div
+            className="relative flex aspect-[16/10] w-full items-center justify-center rounded-3xl bg-night lg:aspect-[4/5]"
+            aria-hidden="true"
+          >
+            <BrandMark className="h-16 w-16 text-white/10" />
+          </div>
+        )}
+      </figure>
+    </section>
   );
 }

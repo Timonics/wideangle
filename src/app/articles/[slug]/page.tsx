@@ -2,22 +2,28 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getConfig } from '@/lib/config';
-import { getArticle, getArticlePage } from '@/lib/data';
+import { getArticle, getArticlePage, getSeries } from '@/lib/data';
 import { isGenuineMissing, isUpstreamUnavailable } from '@/lib/errors';
 import { articlePath, categoryPath, isSafeSlug } from '@/lib/urls';
 import {
   articleCanonical,
   articleDescription,
+  articleHasUpdate,
   articleJsonLd,
+  articleNoIndex,
+  articleSocial,
   articleTitle,
   formatDate,
   pageJsonLd,
 } from '@/lib/seo';
 import { ArticleBody } from '@/components/ArticleBody';
 import { ArticleCard } from '@/components/ArticleCard';
+import SmartImage from '@/components/SmartImage';
+import { BrandMark } from '@/components/Logo';
 import { StoryRail } from '@/components/StoryRail';
 import { buildOutline } from '@/lib/calliope/adapter';
 import { readPlainText, safeUrl } from '@/lib/render/safe';
+import type { ArticleView, SeriesView } from '@/lib/types';
 
 export const revalidate = 300;
 export const dynamicParams = true;
@@ -39,6 +45,7 @@ export async function generateMetadata({
     const article = await getArticle(slug);
     const canonical = articleCanonical(article);
     const description = articleDescription(article);
+    const social = articleSocial(article);
     const socialImage = safeUrl(
       article.seo?.socialImageUrl ?? article.heroImage?.url,
     );
@@ -51,18 +58,18 @@ export async function generateMetadata({
       alternates: { canonical },
       openGraph: {
         type: 'article',
-        title: article.title,
-        description,
+        title: social.title,
+        description: social.description,
         url: canonical,
         siteName: getConfig().publication.name,
         locale: getConfig().publication.locale,
         publishedTime: article.publishedAt,
-        // Only a GENUINE modification date is emitted. When the
-        // upstream does not publish one the field is omitted entirely
-        // rather than filled with the current time.
-        ...(article.modifiedAt === undefined
-          ? {}
-          : { modifiedTime: article.modifiedAt }),
+        // Only a GENUINE, later modification date is emitted. An
+        // `updatedAt` that merely mirrors the publish time is omitted
+        // rather than reported as a revision.
+        ...(articleHasUpdate(article)
+          ? { modifiedTime: article.modifiedAt }
+          : {}),
         authors: [article.author.name],
         ...(socialImageList === undefined
           ? {}
@@ -70,13 +77,15 @@ export async function generateMetadata({
       },
       twitter: {
         card: socialImageList === undefined ? 'summary' : 'summary_large_image',
-        title: article.title,
-        description,
+        title: social.title,
+        description: social.description,
         ...(socialImageList === undefined
           ? {}
           : { images: socialImageList }),
       },
-      robots: { index: true, follow: true },
+      robots: articleNoIndex(article)
+        ? { index: false, follow: false }
+        : { index: true, follow: true },
     };
   } catch (error) {
     if (isGenuineMissing(error)) {
@@ -121,10 +130,11 @@ export default async function ArticlePage({ params }: RouteParams) {
   const config = getConfig();
   const primaryCategory = article.categories[0];
 
-  // Sidebar and "More on" rails are decorative: a failure here must
-  // never turn an otherwise-healthy article into an error page, so
-  // each read is isolated and degrades to "section hidden".
-  const [morePage, categoryPage] = await Promise.all([
+  // Sidebar, "More on" rails and series navigation are decorative: a
+  // failure here must never turn an otherwise-healthy article into an
+  // error page, so each read is isolated and degrades to "section hidden".
+  const articleSeries = article.series;
+  const [morePage, categoryPage, series] = await Promise.all([
     fetchSafely(() => getArticlePage({ page: 1, pageSize: 5 })),
     primaryCategory !== undefined
       ? fetchSafely(() =>
@@ -135,7 +145,20 @@ export default async function ArticlePage({ params }: RouteParams) {
           }),
         )
       : Promise.resolve(null),
+    articleSeries !== undefined
+      ? fetchSafely(() => getSeries(articleSeries.slug))
+      : Promise.resolve(null),
   ]);
+
+  // Prev/next within the follow-up series, by series position.
+  const seriesIndex =
+    series?.articles.findIndex((item) => item.slug === article.slug) ?? -1;
+  const seriesPrev =
+    seriesIndex > 0 ? series?.articles[seriesIndex - 1] : undefined;
+  const seriesNext =
+    seriesIndex >= 0 && series !== null && seriesIndex < series.articles.length - 1
+      ? series.articles[seriesIndex + 1]
+      : undefined;
 
   const related = (article.related ?? [])
     .filter((item) => item.slug !== article.slug)
@@ -170,6 +193,21 @@ export default async function ArticlePage({ params }: RouteParams) {
       }
     }
   }
+
+  // "Read next" recirculation: injected into the flow directly after
+  // the lede paragraph, where a reader who has just committed is most
+  // receptive to the next story. Falls back to the end of the article
+  // when the body opens with something other than a paragraph.
+  const firstParagraphIndex = article.body.findIndex(
+    (block, index) => index !== heroBlockIndex && block.type === 'paragraph',
+  );
+  const inlineTeaser =
+    readNext.length > 0 && firstParagraphIndex >= 0
+      ? {
+          index: firstParagraphIndex,
+          node: <InlineReadNext items={readNext.slice(0, 2)} />,
+        }
+      : undefined;
 
   // The site container is wide for the magazine grids; long-form
   // reading stays at a comfortable measure.
@@ -214,28 +252,37 @@ export default async function ArticlePage({ params }: RouteParams) {
         </ol>
       </nav>
 
+      {article.series !== undefined ? (
+        <SeriesNav
+          series={article.series}
+          prev={seriesPrev}
+          next={seriesNext}
+        />
+      ) : null}
+
       <article>
-        {heroImage !== undefined ? (
-          <figure className="mb-8">
-            {/* eslint-disable-next-line @next/next/no-img-element --
-                Editor-chosen CDN image; not available to next/image at
-                build time. Explicit dims keep CLS at zero. */}
-            <img
-              src={heroImage.url}
-              alt={heroImage.alt}
-              width={heroImage.width}
-              height={heroImage.height}
-              className="aspect-[21/9] w-full rounded-2xl object-cover"
-            />
-            {heroImage.alt !== '' ? (
-              <figcaption className="mt-2 text-center text-xs text-muted">
-                {heroImage.alt}
-              </figcaption>
-            ) : null}
-          </figure>
+        {article.corrections.length > 0 ? (
+          <aside
+            aria-label="Corrections"
+            className="mb-8 rounded-xl border-l-4 border-gold bg-gold/10 px-4 py-3 text-sm"
+          >
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold">
+              {article.corrections.length === 1 ? 'Correction' : 'Corrections'}
+            </p>
+            <ul className="mt-1.5 space-y-1.5">
+              {article.corrections.map((correction) => (
+                <li key={`${correction.date}-${correction.note}`}>
+                  <time dateTime={correction.date} className="font-semibold text-ink">
+                    {formatDate(correction.date)}
+                  </time>
+                  <span className="text-ink/85"> — {correction.note}</span>
+                </li>
+              ))}
+            </ul>
+          </aside>
         ) : null}
 
-        <header className="mb-8 text-center">
+        <header className="mb-8">
           {article.categories[0] !== undefined ? (
             <p>
               <Link
@@ -247,17 +294,36 @@ export default async function ArticlePage({ params }: RouteParams) {
             </p>
           ) : null}
 
-          <h1 className="mx-auto mt-4 max-w-3xl font-serif text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
+          <h1 className="mt-4 max-w-4xl font-serif text-4xl font-black leading-[1.06] tracking-tight sm:text-5xl">
             {article.title}
           </h1>
 
+          {article.subtitle !== undefined ? (
+            <p className="mt-4 max-w-2xl font-serif text-xl italic leading-relaxed text-muted">
+              {article.subtitle}
+            </p>
+          ) : null}
+
           {article.excerpt !== undefined ? (
-            <p className="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-muted">
+            <p
+              className={`max-w-2xl text-lg leading-relaxed text-muted ${
+                article.subtitle !== undefined ? 'mt-3' : 'mt-4'
+              }`}
+            >
               {article.excerpt}
             </p>
           ) : null}
 
-          <p className="mt-5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-muted">
+          <p className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+            {article.author.imageUrl !== undefined ? (
+              <SmartImage
+                src={article.author.imageUrl}
+                alt=""
+                width={36}
+                height={36}
+                className="mr-1 h-9 w-9 rounded-full object-cover"
+              />
+            ) : null}
             {article.publishedAt !== '' ? (
               <time dateTime={article.publishedAt}>
                 {formatDate(article.publishedAt)}
@@ -265,7 +331,7 @@ export default async function ArticlePage({ params }: RouteParams) {
             ) : null}
             {article.author.name !== '' ? (
               <>
-                <span aria-hidden="true" className="text-accent">
+                <span aria-hidden="true" className="text-gold">
                   ·
                 </span>
                 <span>
@@ -276,21 +342,57 @@ export default async function ArticlePage({ params }: RouteParams) {
                 </span>
               </>
             ) : null}
-            {article.modifiedAt !== undefined ? (
+            {article.readingTimeMinutes !== undefined ? (
               <>
-                <span aria-hidden="true" className="text-accent">
+                <span aria-hidden="true" className="text-gold">
+                  ·
+                </span>
+                <span>{article.readingTimeMinutes} min read</span>
+              </>
+            ) : null}
+            {articleHasUpdate(article) ? (
+              <>
+                <span aria-hidden="true" className="text-gold">
                   ·
                 </span>
                 <span>
                   Updated{' '}
                   <time dateTime={article.modifiedAt}>
-                    {formatDate(article.modifiedAt)}
+                    {formatDate(article.modifiedAt as string)}
                   </time>
                 </span>
               </>
             ) : null}
           </p>
         </header>
+
+        {heroImage !== undefined ? (
+          <figure className="mb-10">
+            {/* Editor-chosen CDN image; not available to next/image at
+                build time. Explicit dims keep CLS at zero. SmartImage
+                falls back to a local placeholder if the CDN fails. */}
+            <SmartImage
+              src={heroImage.url}
+              alt={heroImage.alt}
+              width={heroImage.width}
+              height={heroImage.height}
+              className="aspect-[16/9] w-full rounded-2xl object-cover"
+            />
+            {heroImage.caption !== undefined ||
+            heroImage.credit !== undefined ||
+            heroImage.alt !== '' ? (
+              <figcaption className="mt-2 text-center text-xs text-muted">
+                {heroImage.caption ?? heroImage.alt}
+                {heroImage.credit !== undefined ? (
+                  <span className="text-muted/70">
+                    {' '}
+                    · Photo: {heroImage.credit}
+                  </span>
+                ) : null}
+              </figcaption>
+            ) : null}
+          </figure>
+        ) : null}
 
         {outline.length >= 2 ? (
           <nav
@@ -325,7 +427,40 @@ export default async function ArticlePage({ params }: RouteParams) {
           blocks={article.body}
           headingIds={headingIds}
           skipBlockIndex={heroBlockIndex}
+          insertAfter={inlineTeaser}
         />
+
+        {article.author.name !== '' ? (
+          <aside
+            aria-label={`About ${article.author.name}`}
+            className="mt-12 flex gap-4 rounded-2xl border border-line bg-card p-5"
+          >
+            {article.author.imageUrl !== undefined ? (
+              <SmartImage
+                src={article.author.imageUrl}
+                alt=""
+                width={48}
+                height={48}
+                className="h-12 w-12 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
+                <BrandMark className="h-6 w-6" />
+              </span>
+            )}
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-gold">
+                Written by
+              </p>
+              <p className="mt-0.5 font-semibold">{article.author.name}</p>
+              {article.author.bio !== undefined ? (
+                <p className="mt-1 text-sm leading-relaxed text-muted">
+                  {article.author.bio}
+                </p>
+              ) : null}
+            </div>
+          </aside>
+        ) : null}
 
         {article.tags.length > 0 ? (
           <footer className="mt-12 border-t border-line pt-6">
@@ -348,40 +483,48 @@ export default async function ArticlePage({ params }: RouteParams) {
 
           <ShareRow url={articleCanonical(article)} title={article.title} />
 
-          {readNext.length > 0 ? (
+          {inlineTeaser === undefined && readNext.length > 0 ? (
             <section aria-labelledby="read-next-heading" className="mt-10">
               <h2
                 id="read-next-heading"
-                className="font-serif text-2xl font-semibold tracking-tight"
+                className="font-serif text-2xl font-black tracking-tight"
               >
                 Read next
               </h2>
-              <ul className="mt-4 space-y-3">
-                {readNext.map((item) => (
-                  <li key={item.id}>
+              <ol className="mt-4 border-t border-line">
+                {readNext.map((item, index) => (
+                  <li
+                    key={item.id}
+                    className="group flex items-center gap-4 border-b border-line py-4"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="w-7 shrink-0 font-serif text-2xl font-bold italic leading-none text-gold/60 transition-colors group-hover:text-gold"
+                    >
+                      {index + 1}
+                    </span>
                     <Link
                       href={articlePath(item.slug)}
-                      className="group flex items-center justify-between gap-4 rounded-xl border border-line px-4 py-3 transition-colors hover:border-accent"
+                      className="story-link font-serif text-lg font-semibold leading-snug tracking-tight"
                     >
-                      <span className="font-medium transition-colors group-hover:text-accent">
-                        {item.title}
-                      </span>
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                        className="h-4 w-4 shrink-0 text-accent transition-transform group-hover:translate-x-1"
-                      >
-                        <polyline points="9 6 15 12 9 18" />
-                      </svg>
+                      {item.title}
                     </Link>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                      className="ml-auto h-4 w-4 shrink-0 text-accent transition-transform group-hover:translate-x-1"
+                    >
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                      <polyline points="12 5 19 12 12 19" />
+                    </svg>
                   </li>
                 ))}
-              </ul>
+              </ol>
             </section>
           ) : null}
         </div>
@@ -457,6 +600,60 @@ export default async function ArticlePage({ params }: RouteParams) {
 }
 
 /**
+ * Mid-article "Read next" card: a compact recirculation box injected
+ * after the lede paragraph. At most two stories — a tap away from the
+ * next piece without leaving the flow.
+ */
+function InlineReadNext({ items }: { items: ArticleView[] }) {
+  return (
+    <aside
+      aria-label="Read next"
+      className="my-8 rounded-2xl border border-gold/40 bg-card p-5"
+    >
+      <p className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.2em] text-gold">
+        Read next
+        <span aria-hidden="true" className="h-px flex-1 bg-line" />
+      </p>
+      <ul className="mt-3 space-y-3.5">
+        {items.map((item) => {
+          const category = item.categories[0];
+          return (
+            <li key={item.id} className="group flex items-center gap-3">
+              <span className="min-w-0 flex-1">
+                {category !== undefined ? (
+                  <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-accent">
+                    {category.name}
+                  </span>
+                ) : null}
+                <Link
+                  href={articlePath(item.slug)}
+                  className="story-link font-serif text-base font-semibold leading-snug tracking-tight"
+                >
+                  {item.title}
+                </Link>
+              </span>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="h-4 w-4 shrink-0 text-gold transition-transform group-hover:translate-x-1"
+              >
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </li>
+          );
+        })}
+      </ul>
+    </aside>
+  );
+}
+
+/**
  * A decorative read must never take the article down with it — the
  * page itself has already succeeded by this point.
  */
@@ -466,6 +663,72 @@ async function fetchSafely<T>(fetcher: () => Promise<T>): Promise<T | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * Follow-up series navigation: a dark banner naming the series, this
+ * article's place in it, and prev/next links. A missing neighbour (or a
+ * series fetch that failed upstream) degrades to an inert label — the
+ * banner never blocks the article.
+ */
+function SeriesNav({
+  series,
+  prev,
+  next,
+}: {
+  series: SeriesView;
+  prev?: ArticleView;
+  next?: ArticleView;
+}) {
+  const pill =
+    'inline-flex items-center gap-1.5 rounded-full border border-white/20 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.1em] transition-colors';
+  return (
+    <nav
+      aria-label={`Series: ${series.name}`}
+      className="relative mb-8 overflow-hidden rounded-2xl bg-night p-5"
+    >
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-accent via-gold to-accent"
+      />
+      <div className="relative flex flex-wrap items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-gold">
+            Series · Part {series.position} of {series.total}
+          </p>
+          <p className="mt-1 truncate font-serif text-xl font-semibold tracking-tight text-white">
+            {series.name}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {prev !== undefined ? (
+            <Link
+              href={articlePath(prev.slug)}
+              className={`${pill} text-white hover:border-gold hover:text-gold`}
+            >
+              ← Previous
+            </Link>
+          ) : (
+            <span className={`${pill} cursor-default text-white/35`}>
+              ← Previous
+            </span>
+          )}
+          {next !== undefined ? (
+            <Link
+              href={articlePath(next.slug)}
+              className={`${pill} border-accent bg-accent text-white hover:border-accent-deep hover:bg-accent-deep`}
+            >
+              Next →
+            </Link>
+          ) : (
+            <span className={`${pill} cursor-default text-white/35`}>
+              Next →
+            </span>
+          )}
+        </div>
+      </div>
+    </nav>
+  );
 }
 
 /**

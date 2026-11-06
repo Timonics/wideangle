@@ -1,14 +1,17 @@
 /**
  * The article body renderer.
  *
- * This is a Server Component: it renders on the server and ships no
- * client JavaScript (PRD §15 "minimal client JavaScript"). Every
- * upstream string is emitted as a React text node, never as markup, so
- * no upstream content can execute a script (AC-11).
+ * This is a Server Component: it renders on the server. The only
+ * client boundary is SmartImage, which swaps in a local placeholder
+ * when an editor-chosen CDN image fails to load; everything else
+ * ships no client JavaScript (PRD §15 "minimal client JavaScript").
+ * Every upstream string is emitted as a React text node, never as
+ * markup, so no upstream content can execute a script (AC-11).
  */
 
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import type { ContentBlock } from '@/lib/types';
+import SmartImage from '@/components/SmartImage';
 import {
   KNOWN_BLOCK_TYPES,
   readListItems,
@@ -24,28 +27,35 @@ import {
  *
  * `headingId` maps a block index to the id assigned in the outline, so
  * the table of contents links resolve to the right heading.
+ *
+ * `insertAfter` injects a node (e.g. a "Read next" recirculation card)
+ * into the flow directly after the block at the given index — used to
+ * surface the next stories mid-article rather than only at the end.
  */
 export function ArticleBody({
   blocks,
   headingIds,
   skipBlockIndex,
+  insertAfter,
 }: {
   blocks: ContentBlock[];
   headingIds?: Map<number, string>;
   /** Block index to omit (e.g. an inline image promoted to the hero). */
   skipBlockIndex?: number;
+  insertAfter?: { index: number; node: ReactNode };
 }) {
   return (
     <div className="prose-wideangle">
-      {blocks.map((block, index) =>
-        index === skipBlockIndex ? null : (
-          <Block
-            key={`${block.type}-${index}`}
-            block={block}
-            headingId={headingIds?.get(index)}
-          />
-        ),
-      )}
+      {blocks.map((block, index) => (
+        <Fragment key={`${block.type}-${index}`}>
+          {index === skipBlockIndex ? null : (
+            <Block block={block} headingId={headingIds?.get(index)} />
+          )}
+          {insertAfter !== undefined && index === insertAfter.index
+            ? insertAfter.node
+            : null}
+        </Fragment>
+      ))}
     </div>
   );
 }
@@ -208,12 +218,12 @@ function ImageBlock({ block }: { block: ContentBlock }) {
 
   return (
     <figure>
-      {/* eslint-disable-next-line @next/next/no-img-element --
-          Article images come from an arbitrary editor-chosen CDN and
+      {/* Article images come from an arbitrary editor-chosen CDN and
           are not known at build time, so next/image cannot optimise
           them. The img carries explicit dimensions when the upstream
-          provides them, which keeps CLS at zero. */}
-      <img
+          provides them, which keeps CLS at zero. SmartImage falls
+          back to a local placeholder if the CDN fails. */}
+      <SmartImage
         src={url}
         alt={alt}
         width={width}

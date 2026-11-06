@@ -2,7 +2,8 @@ import Link from 'next/link';
 import type { ArticleView } from '@/lib/types';
 import { articlePath } from '@/lib/urls';
 import { formatDate } from '@/lib/seo';
-import { ViewfinderMark } from '@/components/Logo';
+import { BrandMark } from '@/components/Logo';
+import SmartImage from '@/components/SmartImage';
 
 /**
  * A compact sidebar rail of stories (thumbnail, category kicker,
@@ -27,6 +28,7 @@ export function StoryRail({
       >
         {title}
       </h2>
+      <span aria-hidden="true" className="mt-2 block h-0.5 w-10 bg-gold" />
       <ul className="mt-4 space-y-5">
         {articles.map((article) => {
           const category = article.categories[0];
@@ -39,10 +41,10 @@ export function StoryRail({
                   tabIndex={-1}
                   className="block h-20 w-20 shrink-0 overflow-hidden rounded-xl"
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element --
-                      Editor-chosen CDN image; not available to
-                      next/image at build time. */}
-                  <img
+                  {/* Editor-chosen CDN image; not available to
+                      next/image at build time. SmartImage falls back
+                      to a local placeholder if the CDN fails. */}
+                  <SmartImage
                     src={article.heroImage.url}
                     alt=""
                     width={article.heroImage.width}
@@ -57,7 +59,7 @@ export function StoryRail({
                   aria-hidden="true"
                   className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-surface text-accent"
                 >
-                  <ViewfinderMark className="h-6 w-6" />
+                  <BrandMark className="h-6 w-6" />
                 </span>
               )}
               <div className="min-w-0">
@@ -67,10 +69,7 @@ export function StoryRail({
                   </p>
                 ) : null}
                 <h3 className="mt-0.5 text-sm font-semibold leading-snug">
-                  <Link
-                    href={articlePath(article.slug)}
-                    className="underline decoration-transparent underline-offset-2 transition-colors hover:text-accent hover:decoration-accent"
-                  >
+                  <Link href={articlePath(article.slug)} className="story-link">
                     {article.title}
                   </Link>
                 </h3>

@@ -20,11 +20,14 @@ export default function ErrorBoundary({
   reset: () => void;
 }) {
   return (
-    <div className="py-12">
-      <h1 className="font-serif text-4xl font-semibold tracking-tight">
+    <div className="relative overflow-hidden py-12">
+      <p className="text-xs font-bold uppercase tracking-[0.22em] text-gold">
+        Something went wrong
+      </p>
+      <h1 className="mt-2 font-serif text-4xl font-black tracking-tight sm:text-5xl">
         Temporarily unavailable
       </h1>
-      <p className="mt-3 text-muted">
+      <p className="mt-3 max-w-xl text-muted">
         We could not reach the content service. The article may still exist —
         this is a temporary failure, not a missing page.
       </p>
@@ -39,13 +42,13 @@ export default function ErrorBoundary({
         <button
           type="button"
           onClick={reset}
-          className="rounded-lg bg-accent px-4 py-2 font-medium text-paper transition-colors hover:bg-accent-deep"
+          className="rounded-full bg-accent px-5 py-2 font-semibold text-white transition-colors hover:bg-accent-deep"
         >
           Try again
         </button>
         <Link
           href="/articles"
-          className="rounded-lg border border-line px-4 py-2 font-medium transition-colors hover:border-accent hover:text-accent"
+          className="rounded-full border border-line px-5 py-2 font-semibold transition-colors hover:border-gold hover:text-gold"
         >
           Browse the archive
         </Link>

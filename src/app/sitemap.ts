@@ -1,5 +1,4 @@
 import type { MetadataRoute } from 'next';
-import { getConfig } from '@/lib/config';
 import { getAllPublishedArticles, getCategories } from '@/lib/data';
 import { absoluteUrl, articlePath, categoryPath } from '@/lib/urls';
 
@@ -22,8 +21,6 @@ export const revalidate = 300;
  * articles (AC-06).
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const { publication } = getConfig();
-
   const [articles, categories] = await Promise.all([
     getAllPublishedArticles(),
     getCategories(),
@@ -95,6 +92,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  void publication;
   return entries;
 }

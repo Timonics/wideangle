@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ArticleView } from '@/lib/types';
 import { articlePath, categoryPath } from '@/lib/urls';
 import { formatDate } from '@/lib/seo';
+import SmartImage from '@/components/SmartImage';
 
 /**
  * An article card.
@@ -37,10 +38,10 @@ export function ArticleCard({
           tabIndex={-1}
           className="block overflow-hidden rounded-2xl"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element --
-              Editor-chosen CDN image; not available to next/image at
-              build time. Explicit dims keep CLS at zero. */}
-          <img
+          {/* Editor-chosen CDN image; not available to next/image at
+              build time. Explicit dims keep CLS at zero. SmartImage
+              falls back to a local placeholder if the CDN fails. */}
+          <SmartImage
             src={article.heroImage.url}
             alt={article.heroImage.alt}
             width={article.heroImage.width}
@@ -56,7 +57,7 @@ export function ArticleCard({
         <p className="mt-4 text-xs font-semibold uppercase tracking-[0.15em]">
           <Link
             href={categoryPath(primaryCategory.slug)}
-            className="text-accent transition-colors hover:text-accent-deep"
+            className="text-accent transition-colors hover:text-gold"
           >
             {primaryCategory.name}
           </Link>
@@ -64,11 +65,14 @@ export function ArticleCard({
       ) : null}
 
       <Heading className="mt-1.5 font-serif text-xl font-semibold leading-snug tracking-tight">
-        <Link
-          href={articlePath(article.slug)}
-          className="underline decoration-transparent underline-offset-4 transition-colors hover:text-accent hover:decoration-accent"
-        >
+        <Link href={articlePath(article.slug)} className="story-link">
           {article.title}
+          <span
+            aria-hidden="true"
+            className="ml-1 inline-block text-accent opacity-0 transition-all duration-300 group-hover:translate-x-1 group-hover:opacity-100"
+          >
+            →
+          </span>
         </Link>
       </Heading>
 
@@ -82,6 +86,12 @@ export function ArticleCard({
           <>
             <span aria-hidden="true">·</span>
             <span>{article.author.name}</span>
+          </>
+        ) : null}
+        {article.readingTimeMinutes !== undefined ? (
+          <>
+            <span aria-hidden="true">·</span>
+            <span>{article.readingTimeMinutes} min read</span>
           </>
         ) : null}
       </p>

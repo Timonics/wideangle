@@ -13,17 +13,24 @@ import type {
   ArticleView,
   AuthorView,
   ContentBlock,
+  CorrectionView,
   HeroImageView,
   OutlineEntry,
   PageResult,
+  SeriesDetailView,
   TaxonomyView,
 } from '../types';
 import {
+  calliopeGet,
   calliopeGetEnvelope,
   calliopeGetOne,
+  UpstreamContractError,
   UpstreamNotFoundError,
 } from './client';
-import { upstreamArticleSchema } from './schema';
+import {
+  upstreamArticleSchema,
+  upstreamSeriesDetailSchema,
+} from './schema';
 import type { UpstreamArticle } from './schema';
 
 /** Maximum article body length Calliope accepts. */
@@ -45,18 +52,36 @@ export function toArticleView(article: UpstreamArticle): ArticleView {
   const body = normaliseBlocks(article.content);
   const author = toAuthorView(article.author);
   const title = article.title.trim() === '' ? 'Untitled' : article.title;
-  const heroImage = toHeroImage(article.coverImageUrl, title);
+  const heroImage = toHeroImage(article, title);
+  const subtitle = readTrimmed(article.subtitle);
 
   const view: ArticleView = {
     id: article.id,
     slug: article.slug,
     title,
+    ...(subtitle === undefined ? {} : { subtitle }),
     ...(article.excerpt != null && article.excerpt.trim() !== ''
       ? { excerpt: article.excerpt }
       : {}),
     body,
     publishedAt: article.publishedAt ?? '',
     ...(article.updatedAt != null ? { modifiedAt: article.updatedAt } : {}),
+    featured: article.featured === true,
+    ...(article.series != null
+      ? { series: { ...article.series } }
+      : {}),
+    ...(typeof article.readingTimeMinutes === 'number' &&
+    Number.isFinite(article.readingTimeMinutes) &&
+    article.readingTimeMinutes > 0
+      ? { readingTimeMinutes: Math.round(article.readingTimeMinutes) }
+      : {}),
+    ...(safeUrl(article.canonicalUrl) !== null
+      ? { canonicalUrl: safeUrl(article.canonicalUrl) as string }
+      : {}),
+    corrections: toCorrections(article.corrections),
+    ...(readTrimmed(article.locale) !== undefined
+      ? { locale: readTrimmed(article.locale) as string }
+      : {}),
     author,
     categories: article.category != null ? [toTaxonomy(article.category)] : [],
     tags: (article.tags ?? []).map(toTaxonomy),
@@ -65,6 +90,27 @@ export function toArticleView(article: UpstreamArticle): ArticleView {
       ? {}
       : { related: article.related.map(toArticleView) }),
   };
+
+  if (article.seo != null) {
+    const socialImage = safeUrl(article.seo.socialImageUrl);
+    const socialTitle = readTrimmed(article.seo.socialTitle);
+    const socialDescription = readTrimmed(article.seo.socialDescription);
+    if (
+      socialImage !== null ||
+      socialTitle !== undefined ||
+      socialDescription !== undefined ||
+      article.seo.noIndex === true
+    ) {
+      view.seo = {
+        ...(socialTitle === undefined ? {} : { socialTitle }),
+        ...(socialDescription === undefined
+          ? {}
+          : { socialDescription }),
+        ...(socialImage === null ? {} : { socialImageUrl: socialImage }),
+        ...(article.seo.noIndex === true ? { noIndex: true } : {}),
+      };
+    }
+  }
 
   const { outline } = buildOutline(body);
   if (outline.length > 0) {
@@ -75,6 +121,15 @@ export function toArticleView(article: UpstreamArticle): ArticleView {
 }
 
 function toAuthorView(author: UpstreamArticle['author']): AuthorView {
+  const links = (author.links ?? [])
+    .filter(
+      (link) =>
+        typeof link.label === 'string' &&
+        link.label.trim() !== '' &&
+        safeUrl(link.url) !== null,
+    )
+    .slice(0, 10)
+    .map((link) => ({ label: link.label.trim(), url: safeUrl(link.url) as string }));
   return {
     id: author.id,
     name: author.name,
@@ -82,7 +137,39 @@ function toAuthorView(author: UpstreamArticle['author']): AuthorView {
     ...(author.avatarUrl != null && author.avatarUrl.trim() !== ''
       ? { imageUrl: author.avatarUrl }
       : {}),
+    ...(links.length > 0 ? { links } : {}),
   };
+}
+
+/** Read a trimmed, non-empty string from an optional/nullable field. */
+function readTrimmed(value: unknown): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed === '' ? undefined : trimmed;
+}
+
+/**
+ * Keep only well-formed corrections: a real date and a non-empty note.
+ * The banner is a trust signal, so a malformed entry must never render.
+ */
+function toCorrections(
+  raw: Array<{ date: string; note: string }> | undefined,
+): CorrectionView[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+  return raw
+    .filter(
+      (entry) =>
+        typeof entry?.date === 'string' &&
+        !Number.isNaN(Date.parse(entry.date)) &&
+        typeof entry?.note === 'string' &&
+        entry.note.trim() !== '',
+    )
+    .slice(0, 20)
+    .map((entry) => ({ date: entry.date, note: entry.note.trim() }));
 }
 
 function toTaxonomy(taxonomy: {
@@ -94,23 +181,50 @@ function toTaxonomy(taxonomy: {
 }
 
 /**
- * A hero image needs alt text. The upstream stores only a URL, so the
- * alt text is derived from the article title rather than invented
- * separately — an empty alt would hide the image from screen readers.
+ * The hero image, with real alt text.
  *
- * The URL is validated with the same allowlist the body renderer uses.
+ * The structured `coverImage` object (extended contract) is preferred:
+ * it carries editor-written alt text, a caption/credit, and explicit
+ * dimensions. The legacy bare `coverImageUrl` falls back to alt text
+ * derived from the article title — an empty alt would hide the image
+ * from screen readers.
+ *
+ * URLs are validated with the same allowlist the body renderer uses.
  * Without that, an upstream `javascript:` cover URL would reach the
  * `og:image` / `twitter:image` meta tags, where some crawlers and
  * scrapers will happily execute it.
  */
 function toHeroImage(
-  coverImageUrl: string | null | undefined,
+  article: UpstreamArticle,
   title: string,
 ): HeroImageView | undefined {
-  if (coverImageUrl == null || coverImageUrl.trim() === '') {
+  const structured = article.coverImage;
+  if (structured != null && typeof structured.url === 'string') {
+    const url = safeUrl(structured.url);
+    if (url !== null) {
+      const alt = readTrimmed(structured.alt) ?? title;
+      const caption = readTrimmed(structured.caption);
+      const credit = readTrimmed(structured.credit);
+      return {
+        url,
+        alt,
+        ...(typeof structured.width === 'number' && structured.width > 0
+          ? { width: Math.round(structured.width) }
+          : {}),
+        ...(typeof structured.height === 'number' && structured.height > 0
+          ? { height: Math.round(structured.height) }
+          : {}),
+        ...(caption === undefined ? {} : { caption }),
+        ...(credit === undefined ? {} : { credit }),
+      };
+    }
+  }
+
+  const legacy = article.coverImageUrl;
+  if (legacy == null || legacy.trim() === '') {
     return undefined;
   }
-  const url = safeUrl(coverImageUrl);
+  const url = safeUrl(legacy);
   if (url === null) {
     return undefined;
   }
@@ -422,6 +536,38 @@ export async function fetchAuthors(): Promise<AuthorView[]> {
       },
     ];
   });
+}
+
+/**
+ * Fetch a follow-up series by slug: its identity plus every published
+ * article, ordered by series position (the upstream orders; the
+ * frontend renders prev/next from the positions).
+ *
+ * Throws `UpstreamNotFoundError` when the series does not exist — the
+ * caller degrades to "no series navigation".
+ */
+export async function fetchSeriesBySlug(
+  slug: string,
+): Promise<SeriesDetailView> {
+  const { body } = await calliopeGet({
+    path: `series/${encodeURIComponent(slug)}`,
+  });
+  const parsed = upstreamSeriesDetailSchema.safeParse(body);
+  if (!parsed.success) {
+    throw new UpstreamContractError(
+      'Calliope returned a series payload that does not match the expected shape.',
+    );
+  }
+  const articles = parsed.data.data.articles
+    .map((raw) => upstreamArticleSchema.safeParse(raw))
+    .filter((result) => result.success)
+    .map((result) => toArticleView(result.data as UpstreamArticle));
+  return {
+    id: parsed.data.data.id,
+    name: parsed.data.data.name,
+    slug: parsed.data.data.slug,
+    articles,
+  };
 }
 
 export { UpstreamNotFoundError };

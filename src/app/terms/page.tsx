@@ -17,7 +17,7 @@ export default function TermsPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="font-serif text-4xl font-semibold tracking-tight">Terms</h1>
+      <h1 className="font-serif text-4xl font-black tracking-tight sm:text-5xl">Terms</h1>
 
       <div className="prose-wideangle mt-6">
         <h2>Use of this site</h2>

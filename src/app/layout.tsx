@@ -9,6 +9,7 @@ import { SiteFooter } from '@/components/SiteFooter';
 const fraunces = Fraunces({
   subsets: ['latin'],
   axes: ['opsz'],
+  style: ['normal', 'italic'],
   variable: '--font-fraunces',
 });
 
@@ -69,6 +70,9 @@ export default function RootLayout({
   return (
     <html
       lang={config.publication.locale}
+      // The anti-flash theme script may add `.dark` before hydration;
+      // React must not flag that attribute difference.
+      suppressHydrationWarning
       className={`${fraunces.variable} ${inter.variable}`}
     >
       <head>

@@ -104,10 +104,10 @@ export default async function ArticlesPage({ searchParams }: RouteParams) {
       />
 
       <header className="mb-8">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold">
           {searching ? 'Search the archive' : 'The archive'}
         </p>
-        <h1 className="mt-2 font-serif text-4xl font-semibold tracking-tight sm:text-5xl">
+        <h1 className="mt-2 font-serif text-5xl font-black tracking-tight sm:text-6xl">
           {searching ? `Results for “${query}”` : 'Articles'}
         </h1>
         <p className="mt-3 text-muted">
@@ -117,7 +117,10 @@ export default async function ArticlesPage({ searchParams }: RouteParams) {
               ? 'No articles have been published yet.'
               : `${articles.total} published ${articles.total === 1 ? 'article' : 'articles'} — newest first.`}
         </p>
-        <div aria-hidden="true" className="mt-6 h-0.5 w-24 bg-accent" />
+        <div
+          aria-hidden="true"
+          className="mt-6 h-1 w-24 bg-gradient-to-r from-accent to-gold"
+        />
       </header>
 
       <div className="mb-10 max-w-2xl">
@@ -134,12 +137,9 @@ export default async function ArticlesPage({ searchParams }: RouteParams) {
           </EmptyState>
         ) : (
           <>
-            <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
               {matches.map((article) => (
-                <li
-                  key={article.id}
-                  className="rounded-2xl border border-line bg-card p-4 transition-all duration-300 hover:-translate-y-1 hover:border-accent hover:shadow-xl hover:shadow-accent/10"
-                >
+                <li key={article.id}>
                   <ArticleCard article={article} headingLevel={3} image />
                 </li>
               ))}
@@ -160,13 +160,17 @@ export default async function ArticlesPage({ searchParams }: RouteParams) {
           {categories.length > 0 ? (
             <nav aria-label="Categories" className="mb-10">
               <h2 className="sr-only">Browse by category</h2>
-              <ul className="flex flex-wrap gap-2 text-sm">
+              <ul className="flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em]">
                 {categories.map((category) => (
                   <li key={category.id}>
                     <Link
                       href={categoryPath(category.slug)}
-                      className="inline-block rounded-full border border-line px-3 py-1 transition-colors hover:border-accent hover:text-accent"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 transition-colors hover:border-accent hover:text-accent"
                     >
+                      <span
+                        aria-hidden="true"
+                        className="inline-block h-1 w-1 rounded-full bg-gold"
+                      />
                       {category.name}
                     </Link>
                   </li>
@@ -186,12 +190,9 @@ export default async function ArticlesPage({ searchParams }: RouteParams) {
               </EmptyState>
             )
           ) : (
-            <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
               {articles.items.map((article) => (
-                <li
-                  key={article.id}
-                  className="rounded-2xl border border-line bg-card p-4 transition-all duration-300 hover:-translate-y-1 hover:border-accent hover:shadow-xl hover:shadow-accent/10"
-                >
+                <li key={article.id}>
                   <ArticleCard article={article} headingLevel={3} image />
                 </li>
               ))}
@@ -210,7 +211,7 @@ export default async function ArticlesPage({ searchParams }: RouteParams) {
                       ? '/articles'
                       : `/articles?page=${articles.page - 1}`
                   }
-                  className="rounded-lg border border-line px-4 py-2 text-sm font-medium transition-colors hover:border-accent hover:text-accent"
+                  className="rounded-full border border-line px-5 py-2 text-xs font-bold uppercase tracking-[0.12em] transition-colors hover:border-gold hover:text-gold"
                   rel="prev"
                 >
                   ← Newer
@@ -226,7 +227,7 @@ export default async function ArticlesPage({ searchParams }: RouteParams) {
               {articles.hasNext ? (
                 <Link
                   href={`/articles?page=${articles.page + 1}`}
-                  className="rounded-lg border border-line px-4 py-2 text-sm font-medium transition-colors hover:border-accent hover:text-accent"
+                  className="rounded-full border border-line px-5 py-2 text-xs font-bold uppercase tracking-[0.12em] transition-colors hover:border-gold hover:text-gold"
                   rel="next"
                 >
                   Older →

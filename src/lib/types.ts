@@ -14,11 +14,17 @@ export interface TaxonomyView {
   slug: string;
 }
 
+export interface AuthorLinkView {
+  label: string;
+  url: string;
+}
+
 export interface AuthorView {
   id: string;
   name: string;
   bio?: string;
   imageUrl?: string;
+  links?: AuthorLinkView[];
 }
 
 export interface HeroImageView {
@@ -26,6 +32,31 @@ export interface HeroImageView {
   alt: string;
   width?: number;
   height?: number;
+  caption?: string;
+  credit?: string;
+}
+
+/** This article's place within a follow-up series (extended contract). */
+export interface SeriesView {
+  id: string;
+  name: string;
+  slug: string;
+  /** 1-based position of this article within the series. */
+  position: number;
+  /** Number of published articles in the series. */
+  total: number;
+}
+
+export interface SeriesDetailView {
+  id: string;
+  name: string;
+  slug: string;
+  articles: ArticleView[];
+}
+
+export interface CorrectionView {
+  date: string;
+  note: string;
 }
 
 /**
@@ -42,28 +73,38 @@ export interface ArticleView {
   id: string;
   slug: string;
   title: string;
+  /** One-line standfirst shown under the title (extended contract). */
+  subtitle?: string;
   excerpt?: string;
   /** Validated content blocks. */
   body: ContentBlock[];
   /** ISO-8601 publish timestamp. Always present for public articles. */
   publishedAt: string;
   /**
-   * ISO-8601 modification timestamp.
-   *
-   * The current Calliope public projection does not expose
-   * `updatedAt`, so this is usually absent. It is carried through
-   * regardless so the frontend does not need a change when the
-   * upstream starts publishing it.
+   * ISO-8601 modification timestamp, when the upstream publishes one.
+   * Rendered as an "Updated …" line and emitted as `dateModified` in
+   * JSON-LD; never invented when absent.
    */
   modifiedAt?: string;
+  /** Editor-picked homepage hero candidate (extended contract). */
+  featured: boolean;
+  series?: SeriesView;
+  /** Upstream-provided reading time; rendered next to the byline. */
+  readingTimeMinutes?: number;
+  /** External canonical URL, for cross-posts/syndication. */
+  canonicalUrl?: string;
+  /** Visible editorial record, rendered as a banner (extended contract). */
+  corrections: CorrectionView[];
+  locale?: string;
   author: AuthorView;
   categories: TaxonomyView[];
   tags: TaxonomyView[];
   heroImage?: HeroImageView;
   seo?: {
-    title?: string;
-    description?: string;
+    socialTitle?: string;
+    socialDescription?: string;
     socialImageUrl?: string;
+    noIndex?: boolean;
   };
   /** Curated related articles, in editor order. */
   related?: ArticleView[];
